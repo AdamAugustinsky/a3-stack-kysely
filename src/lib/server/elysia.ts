@@ -1,10 +1,9 @@
 import { Elysia, t } from 'elysia';
-import { auth } from './auth';
-import { db } from './db';
+import { createAuth } from './auth';
 import type { Kysely } from 'kysely';
 import type { DB } from './db/db.types';
 
-export const createElysiaApp = (db: Kysely<DB>) =>
+export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAuth>) =>
 	new Elysia({ prefix: '/api' })
 		// Derive organization from session for all routes
 		.derive(async ({ headers }) => {
@@ -386,5 +385,3 @@ export const createElysiaApp = (db: Kysely<DB>) =>
 					return Array.from(dayMap.values());
 				})
 		);
-
-export const app = createElysiaApp(db);

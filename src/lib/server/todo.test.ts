@@ -1,9 +1,24 @@
-import { test, expect, afterAll } from 'bun:test';
+import { test, expect, afterAll, beforeAll } from 'bun:test';
 import { createElysiaEdenTestApp } from './test.utils';
+import type { Kysely } from 'kysely';
+import type { DB } from './db/db.types';
 
-const { eden, cleanup, db } = await createElysiaEdenTestApp();
+let eden: Awaited<ReturnType<typeof createElysiaEdenTestApp>>['eden'];
+let cleanup = () => {};
+let db: Kysely<DB>;
+let organizationId: string;
 
-afterAll(cleanup);
+beforeAll(async () => {
+	const testApp = await createElysiaEdenTestApp();
+	eden = testApp.eden;
+	cleanup = testApp.cleanup;
+	db = testApp.db;
+	organizationId = testApp.organizationId;
+});
+
+afterAll(() => {
+	if (cleanup) cleanup();
+});
 
 // Helper function to create a test todo
 const createTestTodo = async (overrides = {}) => {
@@ -193,7 +208,7 @@ test('DELETE /api/todo/bulk - should delete multiple todos', async () => {
 
 test('GET /api/dashboard/stats - should return correct statistics', async () => {
 	// Clear existing todos for clean test
-	await db.deleteFrom('todo').execute();
+	await db.deleteFrom('todo').where('organization_id', '=', organizationId).execute();
 
 	// Create todos with known distribution
 	await createTestTodo({ text: 'Todo 1', status: 'todo', priority: 'high', label: 'feature' });
@@ -245,7 +260,7 @@ test('GET /api/dashboard/stats - should return correct statistics', async () => 
 
 test('GET /api/dashboard/stats - should handle empty state', async () => {
 	// Clear existing todos for clean test
-	await db.deleteFrom('todo').execute();
+	await db.deleteFrom('todo').where('organization_id', '=', organizationId).execute();
 
 	const response = await eden.api.dashboard.stats.get();
 
