@@ -3,107 +3,108 @@
  * Please do not edit it manually.
  */
 
-import type { ColumnType } from "kysely";
+import type { ColumnType } from 'kysely';
 
-export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
-  ? ColumnType<S, I | undefined, U>
-  : ColumnType<T, T | undefined, T>;
+export type Generated<T> =
+	T extends ColumnType<infer S, infer I, infer U>
+		? ColumnType<S, I | undefined, U>
+		: ColumnType<T, T | undefined, T>;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface Account {
-  accessToken: string | null;
-  accessTokenExpiresAt: Timestamp | null;
-  accountId: string;
-  createdAt: Timestamp;
-  id: string;
-  idToken: string | null;
-  password: string | null;
-  providerId: string;
-  refreshToken: string | null;
-  refreshTokenExpiresAt: Timestamp | null;
-  scope: string | null;
-  updatedAt: Timestamp;
-  userId: string;
+	accessToken: string | null;
+	accessTokenExpiresAt: Timestamp | null;
+	accountId: string;
+	createdAt: Timestamp;
+	id: string;
+	idToken: string | null;
+	password: string | null;
+	providerId: string;
+	refreshToken: string | null;
+	refreshTokenExpiresAt: Timestamp | null;
+	scope: string | null;
+	updatedAt: Timestamp;
+	userId: string;
 }
 
 export interface Invitation {
-  email: string;
-  expiresAt: Timestamp;
-  id: string;
-  inviterId: string;
-  organizationId: string;
-  role: string | null;
-  status: string;
+	email: string;
+	expiresAt: Timestamp;
+	id: string;
+	inviterId: string;
+	organizationId: string;
+	role: string | null;
+	status: string;
 }
 
 export interface Member {
-  createdAt: Timestamp;
-  id: string;
-  organizationId: string;
-  role: string;
-  userId: string;
+	createdAt: Timestamp;
+	id: string;
+	organizationId: string;
+	role: string;
+	userId: string;
 }
 
 export interface Organization {
-  createdAt: Timestamp;
-  id: string;
-  logo: string | null;
-  metadata: string | null;
-  name: string;
-  slug: string;
+	createdAt: Timestamp;
+	id: string;
+	logo: string | null;
+	metadata: string | null;
+	name: string;
+	slug: string;
 }
 
 export interface Session {
-  activeOrganizationId: string | null;
-  createdAt: Timestamp;
-  expiresAt: Timestamp;
-  id: string;
-  ipAddress: string | null;
-  token: string;
-  updatedAt: Timestamp;
-  userAgent: string | null;
-  userId: string;
+	activeOrganizationId: string | null;
+	createdAt: Timestamp;
+	expiresAt: Timestamp;
+	id: string;
+	ipAddress: string | null;
+	token: string;
+	updatedAt: Timestamp;
+	userAgent: string | null;
+	userId: string;
 }
 
 export interface Todo {
-  completed: Generated<boolean>;
-  created_at: Generated<Timestamp>;
-  id: Generated<number>;
-  label: string;
-  organization_id: string;
-  priority: string;
-  status: string;
-  text: string;
-  updated_at: Generated<Timestamp>;
+	completed: Generated<boolean>;
+	created_at: Generated<Timestamp>;
+	id: Generated<number>;
+	label: string;
+	organization_id: string;
+	priority: string;
+	status: string;
+	text: string;
+	updated_at: Generated<Timestamp>;
 }
 
 export interface User {
-  createdAt: Timestamp;
-  email: string;
-  emailVerified: boolean;
-  id: string;
-  image: string | null;
-  name: string;
-  updatedAt: Timestamp;
+	createdAt: Timestamp;
+	email: string;
+	emailVerified: boolean;
+	id: string;
+	image: string | null;
+	name: string;
+	updatedAt: Timestamp;
 }
 
 export interface Verification {
-  createdAt: Timestamp | null;
-  expiresAt: Timestamp;
-  id: string;
-  identifier: string;
-  updatedAt: Timestamp | null;
-  value: string;
+	createdAt: Timestamp | null;
+	expiresAt: Timestamp;
+	id: string;
+	identifier: string;
+	updatedAt: Timestamp | null;
+	value: string;
 }
 
 export interface DB {
-  account: Account;
-  invitation: Invitation;
-  member: Member;
-  organization: Organization;
-  session: Session;
-  todo: Todo;
-  user: User;
-  verification: Verification;
+	account: Account;
+	invitation: Invitation;
+	member: Member;
+	organization: Organization;
+	session: Session;
+	todo: Todo;
+	user: User;
+	verification: Verification;
 }

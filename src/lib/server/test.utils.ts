@@ -25,9 +25,9 @@ export const createTestDb = async () => {
 		await sql.raw(statement).execute(db);
 	}
 
-	return { 
-		db, 
-		cleanup: () => client.close() 
+	return {
+		db,
+		cleanup: () => client.close()
 	};
 };
 

@@ -457,15 +457,15 @@ export const createPost = form(async (data) => {
 ## Database Setup & Management
 
 > **⚠️ CRITICAL DATABASE WORKFLOW**
-> 
+>
 > After ANY schema changes via Atlas migrations, you MUST run:
 > ```bash
 > bun run gentypes
 > ```
-> 
+>
 > This regenerates TypeScript types from the live database schema. Skipping this step will cause:
 > - TypeScript compilation errors
-> - Runtime type mismatches  
+> - Runtime type mismatches
 > - Broken database operations
 > - Missing table/column definitions
 
