@@ -185,27 +185,35 @@ export const listInvitations = query(listInvitationsSchema, async (args) => {
    =========================== */
 
 // Create organization (form, for progressive enhancement)
-export const createOrganization = form(async (data) => {
-	const obj = Object.fromEntries(data.entries());
-	const parsed = v.safeParse(createOrganizationSchema, obj);
-	if (!parsed.success) {
-		const message = parsed.issues?.[0]?.message ?? 'Invalid organization data';
-		error(400, message);
-	}
-	const { name, slug, logo, keepCurrentActiveOrganization } = parsed.output;
-
-	const headers = getRequestEvent().request.headers;
-	const result = await auth.api.createOrganization({
-		headers,
-		body: {
-			name,
-			slug,
-			logo,
-			keepCurrentActiveOrganization
-		}
-	});
-	return result;
+// Form data only contains strings, so we need to handle type coercion
+const createOrganizationFormSchema = v.object({
+	name: v.pipe(v.string(), v.minLength(1, 'Organization name is required')),
+	slug: v.pipe(v.string(), v.minLength(1)),
+	logo: v.optional(v.pipe(v.string(), v.minLength(1))),
+	keepCurrentActiveOrganization: v.optional(
+		v.pipe(
+			v.string(),
+			v.transform((val) => val === 'true')
+		)
+	)
 });
+
+export const createOrganization = form(
+	createOrganizationFormSchema,
+	async ({ name, slug, logo, keepCurrentActiveOrganization }) => {
+		const headers = getRequestEvent().request.headers;
+		const result = await auth.api.createOrganization({
+			headers,
+			body: {
+				name,
+				slug,
+				logo,
+				keepCurrentActiveOrganization
+			}
+		});
+		return result;
+	}
+);
 
 // Update organization
 export const updateOrganization = command(

@@ -15,34 +15,8 @@ const signupSchema = v.object({
 	name: v.pipe(v.string(), v.minLength(1), v.maxLength(100))
 });
 
-export const signin = form(async (data) => {
-	const validatedData = v.safeParse(signinSchema, Object.fromEntries(data.entries()));
-
-	if (!validatedData.success) {
-		// Convert issues to human-readable format using flatten()
-		const flattenedErrors = v.flatten(validatedData.issues);
-
-		console.error('Validation failed:', flattenedErrors);
-
-		// Use SvelteKit error with custom object structure
-		const nestedErrors: Record<string, string[]> = {};
-		if (flattenedErrors.nested) {
-			for (const [key, value] of Object.entries(flattenedErrors.nested)) {
-				if (value) {
-					nestedErrors[key] = value;
-				}
-			}
-		}
-
-		return error(400, {
-			message: 'Validation failed',
-			errors: {
-				nested: nestedErrors
-			}
-		});
-	}
-
-	const { email, password } = validatedData.output;
+export const signin = form(signinSchema, async (data) => {
+	const { email, password } = data;
 
 	const response = await auth.api.signInEmail({
 		body: {
@@ -78,34 +52,8 @@ export const signin = form(async (data) => {
 	}
 });
 
-export const signup = form(async (data) => {
-	const validatedData = v.safeParse(signupSchema, Object.fromEntries(data.entries()));
-
-	if (!validatedData.success) {
-		// Convert issues to human-readable format using flatten()
-		const flattenedErrors = v.flatten(validatedData.issues);
-
-		console.error('Validation failed:', flattenedErrors);
-
-		// Use SvelteKit error with custom object structure
-		const nestedErrors: Record<string, string[]> = {};
-		if (flattenedErrors.nested) {
-			for (const [key, value] of Object.entries(flattenedErrors.nested)) {
-				if (value) {
-					nestedErrors[key] = value;
-				}
-			}
-		}
-
-		return error(400, {
-			message: 'Validation failed',
-			errors: {
-				nested: nestedErrors
-			}
-		});
-	}
-
-	const { email, password, name } = validatedData.output;
+export const signup = form(signupSchema, async (data) => {
+	const { email, password, name } = data;
 
 	const response = await auth.api.signUpEmail({
 		body: {

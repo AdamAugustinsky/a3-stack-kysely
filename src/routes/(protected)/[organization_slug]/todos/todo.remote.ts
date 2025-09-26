@@ -15,18 +15,46 @@ export const getTodos = query(async () => {
 	return response.data;
 });
 
-export const createTodo = form(async (data) => {
-	const headers = headersToRecord(getRequestEvent().request.headers);
-	const validatedTodoData = v.safeParse(CreateTask, Object.fromEntries(data.entries()));
+// Form schema for create todo - handles form data string conversion
+const createTodoFormSchema = v.object({
+	text: v.pipe(v.string(), v.nonEmpty('Task description is required')),
+	completed: v.optional(
+		v.pipe(
+			v.string(),
+			v.transform((val) => val === 'true')
+		)
+	),
+	label: v.union(
+		[v.literal('bug'), v.literal('feature'), v.literal('documentation')],
+		'Please select a valid label: bug, feature, or documentation'
+	),
+	status: v.union(
+		[
+			v.literal('backlog'),
+			v.literal('todo'),
+			v.literal('in progress'),
+			v.literal('done'),
+			v.literal('canceled')
+		],
+		'Please select a valid status: backlog, todo, in progress, done, or canceled'
+	),
+	priority: v.union(
+		[v.literal('low'), v.literal('medium'), v.literal('high')],
+		'Please select a valid priority: low, medium, or high'
+	)
+});
 
-	if (validatedTodoData.success) {
+export const createTodo = form(
+	createTodoFormSchema,
+	async ({ text, completed, priority, status, label }) => {
+		const headers = headersToRecord(getRequestEvent().request.headers);
 		const response = await eden.api.todo.post(
 			{
-				text: validatedTodoData.output.text,
-				completed: validatedTodoData.output.completed,
-				priority: validatedTodoData.output.priority,
-				status: validatedTodoData.output.status,
-				label: validatedTodoData.output.label
+				text,
+				completed,
+				priority,
+				status,
+				label
 			},
 			{ headers }
 		);
@@ -36,30 +64,8 @@ export const createTodo = form(async (data) => {
 		}
 
 		return { success: true };
-	} else {
-		// Convert issues to human-readable format using flatten()
-		const flattenedErrors = v.flatten(validatedTodoData.issues);
-
-		console.error('Validation failed:', flattenedErrors);
-
-		// Use SvelteKit error with custom object structure
-		const nestedErrors: Record<string, string[]> = {};
-		if (flattenedErrors.nested) {
-			for (const [key, value] of Object.entries(flattenedErrors.nested)) {
-				if (value) {
-					nestedErrors[key] = value;
-				}
-			}
-		}
-
-		return error(400, {
-			message: 'Validation failed',
-			errors: {
-				nested: nestedErrors
-			}
-		});
 	}
-});
+);
 
 // Delete a single todo
 const deleteTodoSchema = v.object({
@@ -159,60 +165,66 @@ export const bulkDeleteTodos = command(bulkDeleteTodosSchema, async ({ ids }) =>
 	return { success: true, deletedCount: ids.length };
 });
 
-// Update todo schema
-const updateTodoSchema = v.object({
+// Update todo schema - for form submissions, we need to handle the ID transformation and string-to-boolean conversion
+const updateTodoFormSchema = v.object({
 	id: v.pipe(
 		v.string(),
 		v.transform((val) => parseInt(val, 10)),
 		v.number()
 	),
-	...CreateTask.entries
+	text: v.optional(v.pipe(v.string(), v.nonEmpty('Task description is required'))),
+	completed: v.optional(
+		v.pipe(
+			v.string(),
+			v.transform((val) => val === 'true')
+		)
+	),
+	label: v.optional(
+		v.union(
+			[v.literal('bug'), v.literal('feature'), v.literal('documentation')],
+			'Please select a valid label: bug, feature, or documentation'
+		)
+	),
+	status: v.optional(
+		v.union(
+			[
+				v.literal('backlog'),
+				v.literal('todo'),
+				v.literal('in progress'),
+				v.literal('done'),
+				v.literal('canceled')
+			],
+			'Please select a valid status: backlog, todo, in progress, done, or canceled'
+		)
+	),
+	priority: v.optional(
+		v.union(
+			[v.literal('low'), v.literal('medium'), v.literal('high')],
+			'Please select a valid priority: low, medium, or high'
+		)
+	)
 });
 
 // Update a single todo
-export const updateTodo = form(async (data) => {
-	const validatedData = v.safeParse(updateTodoSchema, Object.fromEntries(data.entries()));
+export const updateTodo = form(
+	updateTodoFormSchema,
+	async ({ id, text, completed, label, status, priority }) => {
+		const headers = headersToRecord(getRequestEvent().request.headers);
+		const response = await eden.api.todo({ id }).patch(
+			{
+				...(text !== undefined && { text }),
+				...(completed !== undefined && { completed }),
+				...(label !== undefined && { label }),
+				...(status !== undefined && { status }),
+				...(priority !== undefined && { priority })
+			},
+			{ headers }
+		);
 
-	if (!validatedData.success) {
-		// Convert issues to human-readable format using flatten()
-		const flattenedErrors = v.flatten(validatedData.issues);
-
-		console.error('Validation failed:', flattenedErrors);
-
-		// Use SvelteKit error with custom object structure
-		const nestedErrors: Record<string, string[]> = {};
-		if (flattenedErrors.nested) {
-			for (const [key, value] of Object.entries(flattenedErrors.nested)) {
-				if (value) {
-					nestedErrors[key] = value;
-				}
-			}
+		if (response.error) {
+			return error(404, { message: 'Todo not found' });
 		}
 
-		return error(400, {
-			message: 'Validation failed',
-			errors: {
-				nested: nestedErrors
-			}
-		});
+		return { success: true };
 	}
-
-	const { id: todoId, ...updateData } = validatedData.output;
-
-	const headers = headersToRecord(getRequestEvent().request.headers);
-	const response = await eden.api.todo({ id: todoId }).patch(
-		{
-			text: updateData.text,
-			label: updateData.label,
-			status: updateData.status,
-			priority: updateData.priority
-		},
-		{ headers }
-	);
-
-	if (response.error) {
-		return error(404, { message: 'Todo not found' });
-	}
-
-	return { success: true };
-});
+);
