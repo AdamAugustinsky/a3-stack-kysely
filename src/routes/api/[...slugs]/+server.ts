@@ -1,4 +1,4 @@
-import { app } from '$lib/server/elysia';
+import { app } from '$lib/server/elysia.prod';
 
 type RequestHandler = (v: { request: Request }) => Response | Promise<Response>;
 
