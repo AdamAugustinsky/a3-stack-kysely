@@ -9,7 +9,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { logout } from '../../routes/auth.remote';
 	import { goto } from '$app/navigation';
-	import { navigateTo } from '@/client.utils.svelte';
+	import { navigateToInActiveOrg } from '@/client.utils.svelte';
 
 	import type { User } from 'better-auth';
 
@@ -81,11 +81,11 @@
 				</DropdownMenu.Label>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Group>
-					<DropdownMenu.Item onclick={() => navigateTo('/account')}>
+					<DropdownMenu.Item onclick={() => navigateToInActiveOrg('/account')}>
 						<UserCircleIcon />
 						Account
 					</DropdownMenu.Item>
-					<DropdownMenu.Item onclick={() => navigateTo('/organization/billing')}>
+					<DropdownMenu.Item onclick={() => navigateToInActiveOrg('/organization/billing')}>
 						<CreditCardIcon />
 						Billing
 					</DropdownMenu.Item>
