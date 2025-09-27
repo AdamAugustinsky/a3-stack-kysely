@@ -46,7 +46,6 @@
 		setActiveOrganization
 	} from '../organization.remote';
 	import { goto, invalidateAll } from '$app/navigation';
-	import { navigateTo } from '@/client.utils.svelte';
 
 	// Reactive organization data
 	const activeOrganization = authClient.useActiveOrganization();

@@ -22,7 +22,7 @@
 	const filterStore = new FilterStore();
 
 	// Make todos query reactive to filter changes
-	const todosQuery = $derived(getTodos(filterStore.serialize() || undefined));
+	const todosQuery = $derived(getTodos(filterStore.toArray()));
 
 	function handleOpenCreateDialog() {
 		showCreateDialog = true;

@@ -279,9 +279,12 @@ export function extractUtmFieldName(field: string): string {
     return field.replace('utm.', '');
 }
 
+const a = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
+const nanoid = (e = 21) => { let t = ""; const r = crypto.getRandomValues(new Uint8Array(e)); for (let n = 0; n < e; n++)t += a[63 & r[n]]; return t };
+
 // Generate unique filter ID
 export function generateFilterId(): string {
-    return `filter-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `filter-${nanoid(10)}`;
 }
 
 export const filterSchema = v.object({

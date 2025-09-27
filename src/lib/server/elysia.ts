@@ -41,8 +41,8 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 		})
 		.group('/todo', (app) =>
 			app
-				.get('/', async ({ organizationId, query }) => {
-					console.log('Todo GET endpoint called with query:', query);
+				.get('/', async ({ organizationId, body }) => {
+					console.log('Todo GET endpoint called');
 					if (!organizationId) {
 						return [];
 					}
@@ -53,23 +53,40 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 						.where('organization_id', '=', organizationId);
 
 					// Apply filters if provided
-					if (query.filters) {
-						try {
-							console.log('Parsing filters:', query.filters);
-							const filters = parseFilters(query.filters);
-							console.log('Parsed filters:', filters);
-							todoQuery = applyFilters(todoQuery, filters);
-							console.log('Applied filters to query');
-						} catch (error) {
-							console.warn('Failed to parse filters:', error);
-							// Continue without filters if parsing fails
-						}
+					if (body && body.filters && body.filters.length > 0) {
+						const normalizedFilters = body.filters.map((f, idx) => ({
+							id: `req-${idx}`,
+							field: f.field,
+							operator: f.operator as any,
+							value: f.value,
+							type: f.type as any
+						}));
+						todoQuery = applyFilters(todoQuery, normalizedFilters as any);
 					}
 
 					const result = await todoQuery.execute();
-					console.log('Query result count:', result.length);
 					return result;
-				})
+				},
+
+					{
+						body: t.Object({
+							filters: t.Array(t.Object({
+								field: t.String(),
+								operator: t.String(),
+								value: t.Any(),
+								type: t.Union([
+									t.Literal('text'),
+									t.Literal('number'),
+									t.Literal('date'),
+									t.Literal('select'),
+									t.Literal('multiselect'),
+									t.Literal('boolean'),
+									t.Literal('utm')
+								])
+							}))
+						})
+					}
+				)
 
 				.post(
 					'/',

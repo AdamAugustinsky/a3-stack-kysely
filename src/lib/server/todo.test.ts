@@ -4,7 +4,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from './db/db.types';
 
 let eden: Awaited<ReturnType<typeof createElysiaEdenTestApp>>['eden'];
-let cleanup = () => {};
+let cleanup = () => { };
 let db: Kysely<DB>;
 let organizationId: string;
 
@@ -50,7 +50,7 @@ const clearTodos = async () => {
 
 describe('Todo CRUD Operations', () => {
 	test('GET /api/todo - returns empty array initially', async () => {
-		const response = await eden.api.todo.get();
+		const response = await eden.api.todo.get({ filters: [] });
 
 		expect(response.data).toBeInstanceOf(Array);
 		expect(response.data).toHaveLength(0);
@@ -80,7 +80,7 @@ describe('Todo CRUD Operations', () => {
 		const todoText = 'Todo with defaults';
 		await createTestTodo({ text: todoText });
 
-		const todos = await eden.api.todo.get();
+		const todos = await eden.api.todo.get({ filters: [] });
 		const createdTodo = todos.data?.find((todo) => todo.text === todoText);
 
 		expect(createdTodo?.completed).toBe(false);
@@ -93,7 +93,7 @@ describe('Todo CRUD Operations', () => {
 
 	test('PATCH /api/todo/:id - updates todo fields', async () => {
 		await createTestTodo({ text: 'Original todo' });
-		const todos = await eden.api.todo.get();
+		const todos = await eden.api.todo.get({ filters: [] });
 		const todo = todos.data?.find((t) => t.text === 'Original todo');
 
 		const updateData = {
@@ -106,7 +106,7 @@ describe('Todo CRUD Operations', () => {
 		const response = await eden.api.todo({ id: todo!.id }).patch(updateData);
 		expect(response.error).toBeNull();
 
-		const updatedTodos = await eden.api.todo.get();
+		const updatedTodos = await eden.api.todo.get({ filters: [] });
 		const updatedTodo = updatedTodos.data?.find((t) => t.id === todo!.id);
 
 		expect(updatedTodo?.text).toBe(updateData.text);
@@ -117,14 +117,14 @@ describe('Todo CRUD Operations', () => {
 
 	test('DELETE /api/todo/:id - removes todo', async () => {
 		await createTestTodo({ text: 'Todo to delete' });
-		const todos = await eden.api.todo.get();
+		const todos = await eden.api.todo.get({ filters: [] });
 		const todoToDelete = todos.data?.find((t) => t.text === 'Todo to delete');
 		const initialCount = todos.data?.length || 0;
 
 		const response = await eden.api.todo({ id: todoToDelete!.id }).delete();
 		expect(response.error).toBeNull();
 
-		const remainingTodos = await eden.api.todo.get();
+		const remainingTodos = await eden.api.todo.get({ filters: [] });
 		expect(remainingTodos.data?.length).toBe(initialCount - 1);
 		expect(remainingTodos.data?.find((t) => t.id === todoToDelete!.id)).toBeUndefined();
 	});
@@ -133,7 +133,7 @@ describe('Todo CRUD Operations', () => {
 describe('Todo Toggle Operation', () => {
 	test('PATCH /api/todo/toggle - toggles completion status', async () => {
 		await createTestTodo({ text: 'Toggle test', completed: false });
-		const todos = await eden.api.todo.get();
+		const todos = await eden.api.todo.get({ filters: [] });
 		const todo = todos.data?.find((t) => t.text === 'Toggle test');
 
 		expect(todo?.completed).toBe(false);
@@ -144,7 +144,7 @@ describe('Todo Toggle Operation', () => {
 		});
 		expect(toggleResponse.error).toBeNull();
 
-		const updatedTodos = await eden.api.todo.get();
+		const updatedTodos = await eden.api.todo.get({ filters: [] });
 		const updatedTodo = updatedTodos.data?.find((t) => t.id === todo!.id);
 
 		expect(updatedTodo?.completed).toBe(true);
@@ -163,7 +163,7 @@ describe('Todo Toggle Operation', () => {
 describe('Bulk Operations', () => {
 	test('PATCH /api/todo/bulk - updates multiple todos', async () => {
 		await createMultipleTodos(3);
-		const todos = await eden.api.todo.get();
+		const todos = await eden.api.todo.get({ filters: [] });
 		const todoIds = todos.data?.slice(0, 2).map((t) => t.id) || [];
 
 		const response = await eden.api.todo.bulk.patch({
@@ -176,7 +176,7 @@ describe('Bulk Operations', () => {
 
 		expect(response.error).toBeNull();
 
-		const updatedTodos = await eden.api.todo.get();
+		const updatedTodos = await eden.api.todo.get({ filters: [] });
 		const updatedItems = updatedTodos.data?.filter((t) => todoIds.includes(t.id));
 
 		expect(updatedItems?.every((t) => t.status === 'done')).toBe(true);
@@ -185,14 +185,14 @@ describe('Bulk Operations', () => {
 
 	test('DELETE /api/todo/bulk - deletes multiple todos', async () => {
 		await createMultipleTodos(4);
-		const todos = await eden.api.todo.get();
+		const todos = await eden.api.todo.get({ filters: [] });
 		const todoIds = todos.data?.slice(0, 2).map((t) => t.id) || [];
 		const initialCount = todos.data?.length || 0;
 
 		const response = await eden.api.todo.bulk.delete({ ids: todoIds });
 		expect(response.error).toBeNull();
 
-		const remainingTodos = await eden.api.todo.get();
+		const remainingTodos = await eden.api.todo.get({ filters: [] });
 		expect(remainingTodos.data?.length).toBe(initialCount - 2);
 
 		const deletedItems = remainingTodos.data?.filter((t) => todoIds.includes(t.id));

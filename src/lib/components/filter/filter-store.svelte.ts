@@ -45,6 +45,7 @@ export class FilterStore {
 			}
 		}
 
+
 		$effect(() => {
 			const currentUrlFilters = page.url.searchParams.get('filters') || '';
 			if (currentUrlFilters !== this.lastUrlFilters) {
@@ -70,8 +71,6 @@ export class FilterStore {
 				} else {
 					url.searchParams.delete('filters');
 				}
-
-				console.log('FilterStore effect - updating URL to:', url.pathname + url.search);
 
 				goto(url.pathname + url.search, {
 					replaceState: true,

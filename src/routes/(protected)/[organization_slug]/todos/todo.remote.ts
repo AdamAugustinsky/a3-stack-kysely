@@ -4,7 +4,7 @@ import { eden } from '$lib/server/eden';
 import { headersToRecord } from '$lib/server/headers-helper';
 import { error } from '@sveltejs/kit';
 import * as v from 'valibot';
-import type { Filter } from '@/utils/filter';
+import { filterSchema } from '$lib/utils/filter';
 
 // Query functions
 const toTask = (input: {
@@ -31,26 +31,16 @@ const toTask = (input: {
 	});
 };
 
-const getTodosSchema = v.optional(v.string());
+const getTodosSchema = v.optional(v.array(filterSchema));
 
-export const getTodos = query(getTodosSchema, async (filtersParam) => {
-	console.log('entered get todos with filters:', filtersParam);
-	const headers = headersToRecord(getRequestEvent().request.headers);
-
-	// Build query params for the API
-	const queryParams = new URLSearchParams();
-
-	if (filtersParam) {
-		queryParams.set('filters', filtersParam);
-		console.log('Remote function - sending filters to API:', filtersParam);
-	}
-
-	console.log('Remote function - query params being sent:', Object.fromEntries(queryParams.entries()));
-
+export const getTodos = query(getTodosSchema, async (filters) => {
 	const response = await eden.api.todo.get({
-		headers,
-		query: Object.fromEntries(queryParams.entries())
-	});
+		filters: filters ?? []
+	},
+		{
+			headers: headersToRecord(getRequestEvent().request.headers),
+		}
+	);
 
 	if (response.error) {
 		console.error('Remote function - API error:', response.error);
@@ -104,13 +94,13 @@ export const createTodo = form(
 			{ headers }
 		);
 
-	if (response.error) {
-		console.error('Failed to create todo', response.error);
-		error(500, 'Failed to create todo');
-	}
+		if (response.error) {
+			console.error('Failed to create todo', response.error);
+			error(500, 'Failed to create todo');
+		}
 
-	return { success: true };
-});
+		return { success: true };
+	});
 
 // Delete a single todo
 const deleteTodoSchema = v.object({
