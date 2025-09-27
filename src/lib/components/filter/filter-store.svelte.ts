@@ -60,8 +60,6 @@ export class FilterStore {
 
 		$effect(() => {
 			const currentFilterSerialized = this.filters.length > 0 ? serializeFilters(this.filters) : '';
-			console.log('FilterStore effect - current filters:', this.filters);
-			console.log('FilterStore effect - serialized:', currentFilterSerialized);
 
 			if (currentFilterSerialized !== this.lastUrlFilters) {
 				this.lastUrlFilters = currentFilterSerialized;

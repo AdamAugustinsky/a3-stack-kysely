@@ -13,7 +13,6 @@
 		const organization = data.organizations.find(
 			(org) => org.slug === page.params.organization_slug
 		);
-		console.log('setting active organization:', organization.slug);
 		authClient.organization.setActive({
 			organizationId: organization.id
 		});
