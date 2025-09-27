@@ -16,6 +16,7 @@
 	import FilterBreadcrumbs from '$lib/components/filter/filter-breadcrumbs.svelte';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import TodoDataTableFacetedFilterForFilterStore from './todo-data-table-faceted-filter-store.svelte';
+	import { Debounced } from 'runed';
 
 	let {
 		table,
@@ -27,7 +28,9 @@
 		todoFilterConfig: FilterConfig[];
 	} = $props();
 
-	const isFiltered = $derived(table.getState().columnFilters.length > 0 || filterStore.hasAnyFilters);
+	const isFiltered = $derived(
+		table.getState().columnFilters.length > 0 || filterStore.hasAnyFilters
+	);
 	const statusCol = $derived(table.getColumn('status'));
 	const priorityCol = $derived(table.getColumn('priority'));
 	const labelCol = $derived(table.getColumn('label'));
@@ -61,14 +64,31 @@
 
 	// Helper functions for text filter
 	function getTextFilterValue(): string {
-		const textFilter = filterStore.filters.find(f => f.field === 'text' && f.operator === 'contains');
-		return textFilter?.value as string || '';
+		const textFilter = filterStore.filters.find(
+			(f) => f.field === 'text' && f.operator === 'contains'
+		);
+		return (textFilter?.value as string) || '';
 	}
+
+	let textFilterValue = $state(getTextFilterValue());
+
+	let debouncedTextFilterValue = new Debounced(() => textFilterValue, 500);
+
+	$effect(() => {
+		if (
+			!debouncedTextFilterValue.pending &&
+			debouncedTextFilterValue.current !== getTextFilterValue()
+		) {
+			updateTextFilter(debouncedTextFilterValue.current);
+		}
+	});
 
 	function updateTextFilter(value: string) {
 		console.log('updateTextFilter called with:', value);
 		// Remove existing text filter
-		filterStore.filters = filterStore.filters.filter(f => !(f.field === 'text' && f.operator === 'contains'));
+		filterStore.filters = filterStore.filters.filter(
+			(f) => !(f.field === 'text' && f.operator === 'contains')
+		);
 
 		// Add new text filter if value is not empty
 		if (value.trim()) {
@@ -103,7 +123,7 @@
 				class="h-7 text-xs"
 				onclick={() => filterStore.switchMode('advanced')}
 			>
-				<SettingsIcon class="h-3 w-3 mr-1" />
+				<SettingsIcon class="mr-1 h-3 w-3" />
 				Advanced
 			</Button>
 		</div>
@@ -123,7 +143,7 @@
 						onclick={() => filterStore.clearFilters()}
 					>
 						Clear all
-						<XIcon class="h-3 w-3 ml-1" />
+						<XIcon class="ml-1 h-3 w-3" />
 					</Button>
 				{/if}
 			</div>
@@ -140,12 +160,9 @@
 					placeholder="Filter tasks..."
 					aria-keyshortcuts="/"
 					title="Press / to focus"
-					value={getTextFilterValue()}
+					bind:value={textFilterValue}
 					onfocus={() => (inputFocused = true)}
 					onblur={() => (inputFocused = false)}
-					oninput={(e) => {
-						updateTextFilter(e.currentTarget.value);
-					}}
 					onkeydown={(e) => {
 						if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
 							e.preventDefault();
