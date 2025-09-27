@@ -4,6 +4,7 @@ import { eden } from '$lib/server/eden';
 import { headersToRecord } from '$lib/server/headers-helper';
 import { error } from '@sveltejs/kit';
 import * as v from 'valibot';
+import type { Filter } from '@/utils/filter';
 
 // Query functions
 const toTask = (input: {
@@ -31,8 +32,78 @@ const toTask = (input: {
 };
 
 export const getTodos = query(async () => {
+
+	console.log('entered get todos');
 	const headers = headersToRecord(getRequestEvent().request.headers);
-	const response = await eden.api.todo.get({ headers });
+	const requestEvent = getRequestEvent();
+
+	// Get filters from URL params and pass them through
+	const filtersParam = requestEvent.url.searchParams.get('filters');
+	const statusParams = requestEvent.url.searchParams.getAll('status');
+	const priorityParams = requestEvent.url.searchParams.getAll('priority');
+	const labelParams = requestEvent.url.searchParams.getAll('label');
+	const searchParam = requestEvent.url.searchParams.get('search');
+
+	// Build query params for the API
+	const queryParams = new URLSearchParams();
+
+	if (filtersParam) {
+		// Pass through advanced filters
+		queryParams.set('filters', filtersParam);
+	} else {
+		// Convert simple filters to advanced filter format if present
+		const simpleFilters = [];
+
+		if (searchParam) {
+			simpleFilters.push({
+				id: 'search',
+				field: 'text',
+				operator: 'contains',
+				value: searchParam,
+				type: 'text'
+			});
+		}
+
+		if (statusParams.length > 0) {
+			simpleFilters.push({
+				id: 'status',
+				field: 'status',
+				operator: statusParams.length === 1 ? 'is' : 'is_any_of',
+				value: statusParams.length === 1 ? statusParams[0] : statusParams,
+				type: statusParams.length === 1 ? 'select' : 'multiselect'
+			});
+		}
+
+		if (priorityParams.length > 0) {
+			simpleFilters.push({
+				id: 'priority',
+				field: 'priority',
+				operator: priorityParams.length === 1 ? 'is' : 'is_any_of',
+				value: priorityParams.length === 1 ? priorityParams[0] : priorityParams,
+				type: priorityParams.length === 1 ? 'select' : 'multiselect'
+			});
+		}
+
+		if (labelParams.length > 0) {
+			simpleFilters.push({
+				id: 'label',
+				field: 'label',
+				operator: labelParams.length === 1 ? 'is' : 'is_any_of',
+				value: labelParams.length === 1 ? labelParams[0] : labelParams,
+				type: labelParams.length === 1 ? 'select' : 'multiselect'
+			});
+		}
+
+		if (simpleFilters.length > 0) {
+			queryParams.set('filters', JSON.stringify(simpleFilters));
+		}
+	}
+
+	const response = await eden.api.todo.get({
+		headers,
+		query: Object.fromEntries(queryParams.entries())
+	});
+
 	if (response.error) {
 		error(500, 'Failed to fetch todos');
 	}
@@ -83,13 +154,13 @@ export const createTodo = form(
 			{ headers }
 		);
 
-		if (response.error) {
-			error(500, 'Failed to create todo');
-		}
-
-		return { success: true };
+	if (response.error) {
+		console.error('Failed to create todo', response.error);
+		error(500, 'Failed to create todo');
 	}
-);
+
+	return { success: true };
+});
 
 // Delete a single todo
 const deleteTodoSchema = v.object({

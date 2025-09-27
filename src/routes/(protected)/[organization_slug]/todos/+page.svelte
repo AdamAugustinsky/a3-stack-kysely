@@ -8,6 +8,8 @@
 	import CirclePlusIcon from '@lucide/svelte/icons/circle-plus';
 	import type { Task } from '$lib/schemas/todo';
 	import { getTodos, deleteTodo, bulkUpdateTodos, bulkDeleteTodos } from './todo.remote';
+	import { FilterStore } from '$lib/components/filter/filter-store.svelte';
+	import { todoFilterConfig } from './filter-config';
 
 	let editingTodo = $state<Task>();
 	let showEditDialog = $state(false);
@@ -15,6 +17,9 @@
 	let selectedTodos = $state<Task[]>([]);
 	let clearSelectionSignal = $state(0);
 	let isBulkOperationPending = $state(false);
+
+	// Create filter store instance
+	const filterStore = new FilterStore();
 
 	// Use the todos from remote query function
 	const todosQuery = getTodos();
@@ -173,6 +178,8 @@
 			onDuplicate={handleDuplicateTodo}
 			onSelectionChange={handleSelectionChange}
 			{clearSelectionSignal}
+			{filterStore}
+			{todoFilterConfig}
 		/>
 	{:else}
 		<div class="py-8 text-center">

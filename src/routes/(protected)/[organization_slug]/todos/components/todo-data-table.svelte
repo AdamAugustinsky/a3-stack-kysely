@@ -42,6 +42,8 @@
 	import type { Task } from '@/schemas/todo';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import type { FilterStore } from '$lib/components/filter/filter-store.svelte';
+	import type { FilterConfig } from '@/utils/filter';
 
 	let {
 		data,
@@ -49,7 +51,9 @@
 		onDelete,
 		onDuplicate,
 		onSelectionChange,
-		clearSelectionSignal = 0
+		clearSelectionSignal = 0,
+		filterStore,
+		todoFilterConfig
 	}: {
 		data: Task[];
 		onEdit?: (todo: Task) => void;
@@ -57,6 +61,8 @@
 		onDuplicate?: (todo: Task) => void;
 		onSelectionChange?: (selected: Task[]) => void;
 		clearSelectionSignal?: number;
+		filterStore: FilterStore;
+		todoFilterConfig: FilterConfig[];
 	} = $props();
 
 	let rowSelection = $state<RowSelectionState>({});
@@ -541,7 +547,7 @@
 {/snippet}
 
 <div class="space-y-4">
-	<TodoDataTableToolbar {table} />
+	<TodoDataTableToolbar {table} {filterStore} {todoFilterConfig} />
 	<div class="rounded-md border">
 		<Table.Root>
 			<Table.Header>

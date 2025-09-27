@@ -2,6 +2,7 @@ import { Elysia, t } from 'elysia';
 import { createAuth } from './auth';
 import type { Kysely } from 'kysely';
 import type { DB } from './db/db.types';
+import { applyFilters, parseFilters } from '@/utils/kysely-filter-builder';
 
 export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAuth>) =>
 	new Elysia({ prefix: '/api' })
@@ -40,21 +41,36 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 		})
 		.group('/todo', (app) =>
 			app
-				.get('/', async ({ organizationId }) => {
+				.get('/', async ({ organizationId, query }) => {
 					if (!organizationId) {
 						return [];
 					}
-					return db
+
+					let todoQuery = db
 						.selectFrom('todo')
 						.selectAll()
-						.where('organization_id', '=', organizationId)
-						.execute();
+						.where('organization_id', '=', organizationId);
+
+					// Apply filters if provided
+					if (query.filters) {
+						try {
+							const filters = parseFilters(query.filters);
+							todoQuery = applyFilters(todoQuery, filters);
+						} catch (error) {
+							console.warn('Failed to parse filters:', error);
+							// Continue without filters if parsing fails
+						}
+					}
+
+					return todoQuery.execute();
 				})
 
 				.post(
 					'/',
 					async ({ body, organizationId }) => {
+						console.log('Creating todo', body);
 						if (!organizationId) {
+							console.log('No organization selected');
 							throw new Error('No organization selected');
 						}
 						return db
