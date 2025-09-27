@@ -72,69 +72,8 @@
 	let sorting = $state<SortingState>([]);
 	let pagination = $state<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
-	// Local state for column filters; sync with URL, but avoid blurring the input while typing
+	// No column filters - using FilterStore instead
 	let columnFilters = $state<ColumnFiltersState>([]);
-
-	function parseFiltersFromUrl(): ColumnFiltersState {
-		const urlParams = page.url.searchParams;
-		const filters: ColumnFiltersState = [];
-		const statuses = urlParams.getAll('status');
-		if (statuses.length > 0) filters.push({ id: 'status', value: statuses });
-		const priorities = urlParams.getAll('priority');
-		if (priorities.length > 0) filters.push({ id: 'priority', value: priorities });
-		const search = urlParams.get('search');
-		if (search) filters.push({ id: 'text', value: search });
-		const labels = urlParams.getAll('label');
-		if (labels.length > 0) filters.push({ id: 'label', value: labels });
-		return filters;
-	}
-
-	// Initialize from URL and keep in sync when URL changes externally
-	$effect(() => {
-		columnFilters = parseFiltersFromUrl();
-	});
-
-	// Function to update URL params when filters change
-	function updateUrlFromFilters(filters: ColumnFiltersState) {
-		const url = new URL(page.url);
-
-		// Clear existing filter params
-		url.searchParams.delete('status');
-		url.searchParams.delete('priority');
-		url.searchParams.delete('search');
-		url.searchParams.delete('label');
-
-		// Add current filters to URL
-		for (const filter of filters) {
-			if (filter.id === 'status' && Array.isArray(filter.value) && filter.value.length > 0) {
-				// Add multiple status values
-				for (const status of filter.value) {
-					url.searchParams.append('status', status);
-				}
-			} else if (
-				filter.id === 'priority' &&
-				Array.isArray(filter.value) &&
-				filter.value.length > 0
-			) {
-				// Add multiple priority values
-				for (const priority of filter.value) {
-					url.searchParams.append('priority', priority);
-				}
-			} else if (filter.id === 'label' && Array.isArray(filter.value) && filter.value.length > 0) {
-				// Add multiple label values
-				for (const label of filter.value) {
-					url.searchParams.append('label', label);
-				}
-			} else if (filter.id === 'text' && filter.value) {
-				url.searchParams.set('search', String(filter.value));
-			}
-		}
-
-		// Navigate to the new URL. Keep focus and scroll position.
-		goto(url.toString(), { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
-	// (debounce removed for text search; we now only update URL on non-text changes)
 
 	const columns: ColumnDef<Task>[] = [
 		{
@@ -281,25 +220,8 @@
 				sorting = updater;
 			}
 		},
-		onColumnFiltersChange: (updater) => {
-			// Update local state immediately so filtering feels instant
-			const previous = columnFilters;
-			const next = typeof updater === 'function' ? updater(previous) : updater;
-			columnFilters = next;
-
-			// Determine if non-text filters changed. If so, update URL immediately.
-			const signature = (filters: ColumnFiltersState) => {
-				const byId = new Map<string, unknown>();
-				for (const f of filters) {
-					if (f.id === 'text') continue;
-					if (Array.isArray(f.value)) byId.set(f.id, [...f.value].slice().sort());
-					else byId.set(f.id, f.value);
-				}
-				return JSON.stringify(Object.fromEntries([...byId.entries()].sort()));
-			};
-			if (signature(previous) !== signature(next)) {
-				updateUrlFromFilters(next);
-			}
+		onColumnFiltersChange: () => {
+			// No-op: we're using FilterStore instead
 		},
 		onColumnVisibilityChange: (updater) => {
 			if (typeof updater === 'function') {

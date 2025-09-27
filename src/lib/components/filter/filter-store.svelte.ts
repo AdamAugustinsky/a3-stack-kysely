@@ -24,60 +24,6 @@ function getInitialFilters(): Filter[] {
 	return [];
 }
 
-function convertSimpleFiltersToAdvanced(): Filter[] {
-	const url = page.url.searchParams;
-	const filters: Filter[] = [];
-
-	// Convert text search
-	const search = url.get('search');
-	if (search) {
-		filters.push({
-			id: generateFilterId(),
-			field: 'text',
-			operator: 'contains',
-			value: search,
-			type: 'text'
-		});
-	}
-
-	// Convert status filters
-	const statuses = url.getAll('status');
-	if (statuses.length > 0) {
-		filters.push({
-			id: generateFilterId(),
-			field: 'status',
-			operator: statuses.length === 1 ? 'is' : 'is_any_of',
-			value: statuses.length === 1 ? statuses[0] : statuses,
-			type: statuses.length === 1 ? 'select' : 'multiselect'
-		});
-	}
-
-	// Convert priority filters
-	const priorities = url.getAll('priority');
-	if (priorities.length > 0) {
-		filters.push({
-			id: generateFilterId(),
-			field: 'priority',
-			operator: priorities.length === 1 ? 'is' : 'is_any_of',
-			value: priorities.length === 1 ? priorities[0] : priorities,
-			type: priorities.length === 1 ? 'select' : 'multiselect'
-		});
-	}
-
-	// Convert label filters
-	const labels = url.getAll('label');
-	if (labels.length > 0) {
-		filters.push({
-			id: generateFilterId(),
-			field: 'label',
-			operator: labels.length === 1 ? 'is' : 'is_any_of',
-			value: labels.length === 1 ? labels[0] : labels,
-			type: labels.length === 1 ? 'select' : 'multiselect'
-		});
-	}
-
-	return filters;
-}
 
 export class FilterStore {
 	filters = $state<Filter[]>(getInitialFilters());
@@ -88,17 +34,15 @@ export class FilterStore {
 		this.filters = initialFilters;
 		this.mode = initialMode;
 
-		// Determine initial mode based on URL structure
-		const hasAdvancedFilters = page.url.searchParams.has('filters');
-		const hasSimpleFilters = page.url.searchParams.has('search') ||
-			page.url.searchParams.has('status') ||
-			page.url.searchParams.has('priority') ||
-			page.url.searchParams.has('label');
-
-		if (hasAdvancedFilters) {
-			this.mode = 'advanced';
-		} else if (hasSimpleFilters) {
-			this.mode = 'simple';
+		// Always load filters from URL (advanced format only)
+		const urlFilters = page.url.searchParams.get('filters');
+		if (urlFilters) {
+			try {
+				this.filters = deserializeFilters(urlFilters);
+			} catch (e) {
+				console.error('Failed to parse filters from URL:', e);
+				this.filters = [];
+			}
 		}
 
 		$effect(() => {
@@ -107,9 +51,6 @@ export class FilterStore {
 				this.lastUrlFilters = currentUrlFilters;
 				try {
 					this.filters = currentUrlFilters ? deserializeFilters(currentUrlFilters) : [];
-					if (currentUrlFilters) {
-						this.mode = 'advanced';
-					}
 				} catch (e) {
 					console.error('Failed to parse filters from URL:', e);
 					this.filters = [];
@@ -118,31 +59,27 @@ export class FilterStore {
 		});
 
 		$effect(() => {
-			if (this.mode === 'advanced') {
-				const currentFilterSerialized = this.filters.length > 0 ? serializeFilters(this.filters) : '';
+			const currentFilterSerialized = this.filters.length > 0 ? serializeFilters(this.filters) : '';
+			console.log('FilterStore effect - current filters:', this.filters);
+			console.log('FilterStore effect - serialized:', currentFilterSerialized);
 
-				if (currentFilterSerialized !== this.lastUrlFilters) {
-					this.lastUrlFilters = currentFilterSerialized;
-					const url = new SvelteURL(window.location.href);
+			if (currentFilterSerialized !== this.lastUrlFilters) {
+				this.lastUrlFilters = currentFilterSerialized;
+				const url = new SvelteURL(window.location.href);
 
-					// Clear simple filter params when in advanced mode
-					url.searchParams.delete('search');
-					url.searchParams.delete('status');
-					url.searchParams.delete('priority');
-					url.searchParams.delete('label');
-
-					if (currentFilterSerialized) {
-						url.searchParams.set('filters', currentFilterSerialized);
-					} else {
-						url.searchParams.delete('filters');
-					}
-
-					goto(url.pathname + url.search, {
-						replaceState: true,
-						keepFocus: true,
-						noScroll: true
-					});
+				if (currentFilterSerialized) {
+					url.searchParams.set('filters', currentFilterSerialized);
+				} else {
+					url.searchParams.delete('filters');
 				}
+
+				console.log('FilterStore effect - updating URL to:', url.pathname + url.search);
+
+				goto(url.pathname + url.search, {
+					replaceState: true,
+					keepFocus: true,
+					noScroll: true
+				});
 			}
 		});
 
@@ -229,72 +166,9 @@ export class FilterStore {
 		return `${this.filters.length} filters`;
 	}
 
-	// Switch between simple and advanced filter modes
+	// Switch between simple and advanced filter modes (UI only)
 	switchMode(newMode: FilterMode): void {
-		if (newMode === this.mode) return;
-
-		if (newMode === 'advanced') {
-			// Convert existing simple filters to advanced
-			const convertedFilters = convertSimpleFiltersToAdvanced();
-			this.filters = convertedFilters;
-			this.mode = 'advanced';
-		} else {
-			// Switch to simple mode - convert to simple URL params
-			this.convertToSimpleFilters();
-			this.mode = 'simple';
-		}
-	}
-
-	// Convert current advanced filters to simple URL format
-	convertToSimpleFilters(): void {
-		const url = new SvelteURL(window.location.href);
-
-		// Clear existing filter params
-		url.searchParams.delete('filters');
-		url.searchParams.delete('search');
-		url.searchParams.delete('status');
-		url.searchParams.delete('priority');
-		url.searchParams.delete('label');
-
-		// Convert filters to simple format
-		for (const filter of this.filters) {
-			if (filter.field === 'text' && filter.operator === 'contains' && typeof filter.value === 'string') {
-				url.searchParams.set('search', filter.value);
-			} else if (filter.field === 'status') {
-				if (Array.isArray(filter.value)) {
-					for (const status of filter.value) {
-						url.searchParams.append('status', String(status));
-					}
-				} else if (filter.value) {
-					url.searchParams.append('status', String(filter.value));
-				}
-			} else if (filter.field === 'priority') {
-				if (Array.isArray(filter.value)) {
-					for (const priority of filter.value) {
-						url.searchParams.append('priority', String(priority));
-					}
-				} else if (filter.value) {
-					url.searchParams.append('priority', String(filter.value));
-				}
-			} else if (filter.field === 'label') {
-				if (Array.isArray(filter.value)) {
-					for (const label of filter.value) {
-						url.searchParams.append('label', String(label));
-					}
-				} else if (filter.value) {
-					url.searchParams.append('label', String(filter.value));
-				}
-			}
-		}
-
-		// Clear filters array as we're now using simple mode
-		this.filters = [];
-
-		goto(url.pathname + url.search, {
-			replaceState: true,
-			keepFocus: true,
-			noScroll: true
-		});
+		this.mode = newMode;
 	}
 
 	// Get current filter mode
@@ -302,19 +176,13 @@ export class FilterStore {
 		return this.mode;
 	}
 
-	// Check if we have any simple filters in the URL
-	get hasSimpleFilters(): boolean {
-		const url = page.url.searchParams;
-		return url.has('search') || url.has('status') || url.has('priority') || url.has('label');
-	}
-
-	// Check if we have advanced filters
-	get hasAdvancedFilters(): boolean {
+	// Check if we have any filters
+	get hasAnyFilters(): boolean {
 		return this.filters.length > 0;
 	}
 
-	// Check if any filters are active (simple or advanced)
-	get hasAnyFilters(): boolean {
-		return this.hasSimpleFilters || this.hasAdvancedFilters;
+	// Check if we have advanced filters (alias for consistency)
+	get hasAdvancedFilters(): boolean {
+		return this.filters.length > 0;
 	}
 }

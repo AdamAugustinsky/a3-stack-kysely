@@ -42,6 +42,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 		.group('/todo', (app) =>
 			app
 				.get('/', async ({ organizationId, query }) => {
+					console.log('Todo GET endpoint called with query:', query);
 					if (!organizationId) {
 						return [];
 					}
@@ -54,15 +55,20 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 					// Apply filters if provided
 					if (query.filters) {
 						try {
+							console.log('Parsing filters:', query.filters);
 							const filters = parseFilters(query.filters);
+							console.log('Parsed filters:', filters);
 							todoQuery = applyFilters(todoQuery, filters);
+							console.log('Applied filters to query');
 						} catch (error) {
 							console.warn('Failed to parse filters:', error);
 							// Continue without filters if parsing fails
 						}
 					}
 
-					return todoQuery.execute();
+					const result = await todoQuery.execute();
+					console.log('Query result count:', result.length);
+					return result;
 				})
 
 				.post(

@@ -15,6 +15,7 @@
 	import FilterBuilder from '$lib/components/filter/filter-builder.svelte';
 	import FilterBreadcrumbs from '$lib/components/filter/filter-breadcrumbs.svelte';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import TodoDataTableFacetedFilterForFilterStore from './todo-data-table-faceted-filter-store.svelte';
 
 	let {
 		table,
@@ -58,32 +59,28 @@
 		return () => window.removeEventListener('keydown', handleKeydown);
 	});
 
-	function submitFilters() {
-		// Build URL from current filters in the table state
-		const url = new URL(page.url);
-		url.searchParams.delete('status');
-		url.searchParams.delete('priority');
-		url.searchParams.delete('search');
-		url.searchParams.delete('label');
+	// Helper functions for text filter
+	function getTextFilterValue(): string {
+		const textFilter = filterStore.filters.find(f => f.field === 'text' && f.operator === 'contains');
+		return textFilter?.value as string || '';
+	}
 
-		for (const filter of table.getState().columnFilters) {
-			if (filter.id === 'status' && Array.isArray(filter.value) && filter.value.length > 0) {
-				for (const status of filter.value) url.searchParams.append('status', status);
-			} else if (
-				filter.id === 'priority' &&
-				Array.isArray(filter.value) &&
-				filter.value.length > 0
-			) {
-				for (const priority of filter.value) url.searchParams.append('priority', priority);
-			} else if (filter.id === 'label' && Array.isArray(filter.value) && filter.value.length > 0) {
-				for (const label of filter.value) url.searchParams.append('label', label);
-			} else if (filter.id === 'text' && filter.value) {
-				url.searchParams.set('search', String(filter.value));
-			}
+	function updateTextFilter(value: string) {
+		console.log('updateTextFilter called with:', value);
+		// Remove existing text filter
+		filterStore.filters = filterStore.filters.filter(f => !(f.field === 'text' && f.operator === 'contains'));
+
+		// Add new text filter if value is not empty
+		if (value.trim()) {
+			console.log('Adding text filter for:', value.trim());
+			filterStore.addFilter({
+				field: 'text',
+				operator: 'contains',
+				value: value.trim(),
+				type: 'text'
+			});
 		}
-
-		filterRef?.blur();
-		goto(url.toString(), { replaceState: true, keepFocus: false, noScroll: true });
+		console.log('Current filters after text update:', filterStore.filters);
 	}
 </script>
 
@@ -135,7 +132,7 @@
 			{/if}
 		</div>
 	{:else}
-		<!-- Simple Filters UI (existing) -->
+		<!-- Simple Filters UI (using FilterStore) -->
 		<div class="flex items-center space-x-2">
 			<div class="relative">
 				<Input
@@ -143,43 +140,48 @@
 					placeholder="Filter tasks..."
 					aria-keyshortcuts="/"
 					title="Press / to focus"
-					value={(table.getColumn('text')?.getFilterValue() as string) ?? ''}
+					value={getTextFilterValue()}
 					onfocus={() => (inputFocused = true)}
 					onblur={() => (inputFocused = false)}
 					oninput={(e) => {
-						table.getColumn('text')?.setFilterValue(e.currentTarget.value);
+						updateTextFilter(e.currentTarget.value);
 					}}
 					onkeydown={(e) => {
 						if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
 							e.preventDefault();
-							submitFilters();
+							filterRef?.blur();
 						}
-					}}
-					onchange={(e) => {
-						table.getColumn('text')?.setFilterValue(e.currentTarget.value);
 					}}
 					class="h-8 w-[150px] pr-8 lg:w-[250px]"
 				/>
-				{#if !inputFocused && !((table.getColumn('text')?.getFilterValue() as string) ?? '').length}
+				{#if !inputFocused && !getTextFilterValue().length}
 					<Kbd content="/" class="absolute top-1/2 right-1.5 -translate-y-1/2" aria-hidden="true" />
 				{/if}
 			</div>
 
-			{#if statusCol}
-				<TodoDataTableFacetedFilter column={statusCol} title="Status" options={statuses} />
-			{/if}
-			{#if priorityCol}
-				<TodoDataTableFacetedFilter column={priorityCol} title="Priority" options={priorities} />
-			{/if}
-			{#if labelCol}
-				<TodoDataTableFacetedFilter column={labelCol} title="Label" options={labels} />
-			{/if}
+			<TodoDataTableFacetedFilterForFilterStore
+				field="status"
+				title="Status"
+				options={statuses}
+				{filterStore}
+			/>
+			<TodoDataTableFacetedFilterForFilterStore
+				field="priority"
+				title="Priority"
+				options={priorities}
+				{filterStore}
+			/>
+			<TodoDataTableFacetedFilterForFilterStore
+				field="label"
+				title="Label"
+				options={labels}
+				{filterStore}
+			/>
 
 			{#if isFiltered}
 				<Button
 					variant="ghost"
 					onclick={() => {
-						table.resetColumnFilters();
 						filterStore.clearFilters();
 					}}
 					class="h-8 px-2 lg:px-3"

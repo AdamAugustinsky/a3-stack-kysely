@@ -21,8 +21,8 @@
 	// Create filter store instance
 	const filterStore = new FilterStore();
 
-	// Use the todos from remote query function
-	const todosQuery = getTodos();
+	// Make todos query reactive to filter changes
+	const todosQuery = $derived(getTodos(filterStore.serialize() || undefined));
 
 	function handleOpenCreateDialog() {
 		showCreateDialog = true;
