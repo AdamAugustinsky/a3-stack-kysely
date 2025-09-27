@@ -1,18 +1,42 @@
 import { command, form, query, getRequestEvent } from '$app/server';
-import { CreateTask } from '$lib/schemas/todo';
+import { Task } from '$lib/schemas/todo';
 import { eden } from '$lib/server/eden';
 import { headersToRecord } from '$lib/server/headers-helper';
 import { error } from '@sveltejs/kit';
 import * as v from 'valibot';
 
 // Query functions
+const toTask = (input: {
+	readonly id: number;
+	readonly text: string;
+	readonly completed: boolean;
+	readonly priority: string;
+	readonly status: string;
+	readonly label: string;
+	readonly created_at: string | Date;
+	readonly updated_at: string | Date;
+}): Task => {
+	const createdAt = input.created_at instanceof Date ? input.created_at : new Date(input.created_at);
+	const updatedAt = input.updated_at instanceof Date ? input.updated_at : new Date(input.updated_at);
+	return v.parse(Task, {
+		id: input.id,
+		text: input.text,
+		completed: input.completed,
+		priority: input.priority,
+		status: input.status,
+		label: input.label,
+		createdAt,
+		updatedAt
+	});
+};
+
 export const getTodos = query(async () => {
 	const headers = headersToRecord(getRequestEvent().request.headers);
 	const response = await eden.api.todo.get({ headers });
 	if (response.error) {
 		error(500, 'Failed to fetch todos');
 	}
-	return response.data;
+	return response.data.map(toTask);
 });
 
 // Form schema for create todo - handles form data string conversion
@@ -114,7 +138,13 @@ export const bulkUpdateTodos = command(bulkUpdateTodosSchema, async ({ ids, upda
 	// Filter out undefined values from updates
 	const filteredUpdates = Object.fromEntries(
 		Object.entries(updates).filter(([, value]) => value !== undefined)
-	);
+	) as Partial<{
+		priority: Task['priority'];
+		status: Task['status'];
+		text: Task['text'];
+		label: Task['label'];
+		completed: boolean;
+	}>;
 
 	if (Object.keys(filteredUpdates).length === 0) {
 		error(400, 'No valid updates provided');
@@ -166,11 +196,12 @@ export const bulkDeleteTodos = command(bulkDeleteTodosSchema, async ({ ids }) =>
 });
 
 // Update todo schema - for form submissions, we need to handle the ID transformation and string-to-boolean conversion
+
 const updateTodoFormSchema = v.object({
 	id: v.pipe(
 		v.string(),
 		v.transform((val) => parseInt(val, 10)),
-		v.number()
+		v.number('ID must be a number')
 	),
 	text: v.optional(v.pipe(v.string(), v.nonEmpty('Task description is required'))),
 	completed: v.optional(
@@ -206,25 +237,23 @@ const updateTodoFormSchema = v.object({
 });
 
 // Update a single todo
-export const updateTodo = form(
-	updateTodoFormSchema,
-	async ({ id, text, completed, label, status, priority }) => {
-		const headers = headersToRecord(getRequestEvent().request.headers);
-		const response = await eden.api.todo({ id }).patch(
-			{
-				...(text !== undefined && { text }),
-				...(completed !== undefined && { completed }),
-				...(label !== undefined && { label }),
-				...(status !== undefined && { status }),
-				...(priority !== undefined && { priority })
-			},
-			{ headers }
-		);
+export const updateTodo = form(updateTodoFormSchema, async ({ id, ...maybeUpdates }) => {
+	const headers = headersToRecord(getRequestEvent().request.headers);
+	const updates = Object.fromEntries(
+		Object.entries(maybeUpdates).filter(([, value]) => value !== undefined)
+	) as Partial<Pick<Task, 'text' | 'label' | 'status' | 'priority'>> & {
+		completed?: boolean;
+	};
 
-		if (response.error) {
-			return error(404, { message: 'Todo not found' });
-		}
-
-		return { success: true };
+	if (Object.keys(updates).length === 0) {
+		error(400, 'No updates provided');
 	}
-);
+
+	const response = await eden.api.todo({ id }).patch(updates, { headers });
+
+	if (response.error) {
+		return error(404, { message: 'Todo not found' });
+	}
+
+	return { success: true };
+});

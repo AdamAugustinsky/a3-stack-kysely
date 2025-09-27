@@ -222,8 +222,7 @@ Query functions can accept an argument, such as the `slug` of an individual post
 	const post = $derived(await getPost(params.slug));
 </script>
 
-<h1>{post.title}</h1>
-<div>{@html post.content}</div>
+<h1>{post.title}</h1><div>{@html post.content}</div>
 ```
 
 Since `getPost` exposes an HTTP endpoint, it's important to validate this argument to be sure that it's the correct type. For this, we can use any [Standard Schema](https://standardschema.dev/) validation library such as [Zod](https://zod.dev/) or [Valibot](https://valibot.dev/):
@@ -261,9 +260,7 @@ Both the argument and the return value are serialized with [devalue](https://git
 Any query can be re-fetched via its `refresh` method, which retrieves the latest value from the server:
 
 ```svelte
-<button onclick={() => getPosts().refresh()}>
-	Check for new posts
-</button>
+<button onclick={() => getPosts().refresh()}> Check for new posts </button>
 ```
 
 > [!NOTE] Queries are cached while they're on the page, meaning `getPosts() === getPosts()`. This means you don't need a reference like `const posts = getPosts()` in order to update the query.
@@ -315,16 +312,13 @@ export const getWeather = query.batch(v.string(), async (cities) => {
 {/each}
 
 {#if cities.length > limit}
-	<button onclick={() => limit += 5}>
-		Load more
-	</button>
+	<button onclick={() => (limit += 5)}> Load more </button>
 {/if}
 ```
 
 ## form
 
 The `form` function makes it easy to write data to the server. It takes a callback that receives `data` constructed from the submitted [`FormData`](https://developer.mozilla.org/en-US/docs/Web/API/FormData)...
-
 
 ```ts
 /// file: src/routes/blog/data.remote.js
@@ -351,14 +345,18 @@ import { query, form } from '$app/server';
 import * as db from '$lib/server/database';
 import * as auth from '$lib/server/auth';
 
-export const getPosts = query(async () => { /* ... */ });
+export const getPosts = query(async () => {
+	/* ... */
+});
 
-export const getPost = query(v.string(), async (slug) => { /* ... */ });
+export const getPost = query(v.string(), async (slug) => {
+	/* ... */
+});
 
 export const createPost = form(
 	v.object({
 		title: v.pipe(v.string(), v.nonEmpty()),
-		content:v.pipe(v.string(), v.nonEmpty())
+		content: v.pipe(v.string(), v.nonEmpty())
 	}),
 	async ({ title, content }) => {
 		// Check the user is logged in
@@ -414,7 +412,11 @@ import { form } from '$app/server';
 export const setCount = form(
 	v.object({
 		// Valibot:
-		count: v.pipe(v.string(), v.transform((s) => Number(s)), v.number()),
+		count: v.pipe(
+			v.string(),
+			v.transform((s) => Number(s)),
+			v.number()
+		)
 		// Zod:
 		// count: z.coerce.number<string>()
 	}),
@@ -438,8 +440,8 @@ The `name` attributes on the form controls must correspond to the properties of 
 <input name="name.first" />
 <input name="name.last" />
 {#each jobs as job, idx}
-	<input name="jobs[{idx}].title">
-	<input name="jobs[{idx}].company">
+	<input name="jobs[{idx}].title" />
+	<input name="jobs[{idx}].company" />
 {/each}
 ```
 
@@ -462,7 +464,7 @@ If you'd like type safety and autocomplete when setting `name` attributes, use t
 
 This will error during typechecking if `title` does not exist on your schema.
 
-The form object contains `method` and `action` properties that allow it to work without JavaScript (i.e. it submits data and reloads the page). It also has an [attachment](/docs/svelte/@attach) that progressively enhances the form when JavaScript is available, submitting data *without* reloading the entire page.
+The form object contains `method` and `action` properties that allow it to work without JavaScript (i.e. it submits data and reloads the page). It also has an [attachment](/docs/svelte/@attach) that progressively enhances the form when JavaScript is available, submitting data _without_ reloading the entire page.
 
 ### Validation
 
@@ -473,31 +475,25 @@ If the submitted data doesn't pass the schema, the callback will not run. Instea
 	<label>
 		<h2>Title</h2>
 
-+++		{#if createPost.issues.title}
+		+++ {#if createPost.issues.title}
 			{#each createPost.issues.title as issue}
 				<p class="issue">{issue.message}</p>
 			{/each}
 		{/if}+++
 
-		<input
-			name="title"
-			+++aria-invalid={!!createPost.issues.title}+++
-		/>
+		<input name="title" +++aria-invalid="{!!createPost.issues.title}+++" />
 	</label>
 
 	<label>
 		<h2>Write your post</h2>
 
-+++		{#if createPost.issues.content}
+		+++ {#if createPost.issues.content}
 			{#each createPost.issues.content as issue}
 				<p class="issue">{issue.message}</p>
 			{/each}
 		{/if}+++
 
-		<textarea
-			name="content"
-			+++aria-invalid={!!createPost.issues.content}+++
-		></textarea>
+		<textarea name="content" +++aria-invalid="{!!createPost.issues.content}+++"></textarea>
 	</label>
 
 	<button>Publish!</button>
@@ -572,8 +568,9 @@ You can prevent sensitive data (such as passwords and credit card numbers) from 
 		Password
 		<input
 			type="password"
-			+++name="_password"+++
-			+++aria-invalid={!!register.issues._password}+++
+			+++name="_password"
+			+++
+			+++aria-invalid="{!!register.issues._password}+++"
 		/>
 	</label>
 
@@ -659,13 +656,19 @@ import { query, form } from '$app/server';
 import * as db from '$lib/server/database';
 import * as auth from '$lib/server/auth';
 
-export const getPosts = query(async () => { /* ... */ });
+export const getPosts = query(async () => {
+	/* ... */
+});
 
-export const getPost = query(v.string(), async (slug) => { /* ... */ });
+export const getPost = query(v.string(), async (slug) => {
+	/* ... */
+});
 
 // ---cut---
 export const createPost = form(
-	v.object({/* ... */}),
+	v.object({
+		/* ... */
+	}),
 	async (data) => {
 		// ...
 
@@ -710,16 +713,18 @@ We can customize what happens when the form is submitted with the `enhance` meth
 
 <h1>Create a new post</h1>
 
-<form {...createPost.enhance(async ({ form, data, submit }) => {
-	try {
-		await submit();
-		form.reset();
+<form
+	{...createPost.enhance(async ({ form, data, submit }) => {
+		try {
+			await submit();
+			form.reset();
 
-		showToast('Successfully published!');
-	} catch (error) {
-		showToast('Oh no! Something went wrong');
-	}
-})}>
+			showToast('Successfully published!');
+		} catch (error) {
+			showToast('Oh no! Something went wrong');
+		}
+	})}
+>
 	<!-- -->
 </form>
 ```
@@ -733,7 +738,7 @@ import type { RemoteQuery, RemoteQueryOverride } from '@sveltejs/kit';
 interface Post {}
 declare function submit(): Promise<any> & {
 	updates(...queries: Array<RemoteQuery<any> | RemoteQueryOverride>): Promise<any>;
-}
+};
 
 declare function getPosts(): RemoteQuery<Post[]>;
 // ---cut---
@@ -747,14 +752,12 @@ import type { RemoteQuery, RemoteQueryOverride } from '@sveltejs/kit';
 interface Post {}
 declare function submit(): Promise<any> & {
 	updates(...queries: Array<RemoteQuery<any> | RemoteQueryOverride>): Promise<any>;
-}
+};
 
 declare function getPosts(): RemoteQuery<Post[]>;
 declare const newPost: Post;
 // ---cut---
-await submit().updates(
-	getPosts().withOverride((posts) => [newPost, ...posts])
-);
+await submit().updates(getPosts().withOverride((posts) => [newPost, ...posts]));
 ```
 
 The override will be applied immediately, and released when the submission completes (or fails).
@@ -1005,13 +1008,11 @@ import { prerender } from '$app/server';
 
 export const getPost = prerender(
 	v.string(),
-	async (slug) => { /* ... */ },
+	async (slug) => {
+		/* ... */
+	},
 	{
-		inputs: () => [
-			'first-post',
-			'second-post',
-			'third-post'
-		]
+		inputs: () => ['first-post', 'second-post', 'third-post']
 	}
 );
 ```
@@ -1104,26 +1105,26 @@ Note that some properties of `RequestEvent` are different inside remote function
 
 ## Redirects
 
-Inside `query`, `form` and `prerender` functions it is possible to use the [`redirect(...)`](@sveltejs-kit#redirect) function. It is *not* possible inside `command` functions, as you should avoid redirecting here. (If you absolutely have to, you can return a `{ redirect: location }` object and deal with it in the client.)
+Inside `query`, `form` and `prerender` functions it is possible to use the [`redirect(...)`](@sveltejs-kit#redirect) function. It is _not_ possible inside `command` functions, as you should avoid redirecting here. (If you absolutely have to, you can return a `{ redirect: location }` object and deal with it in the client.)
 </remotefunctionsdocs>
-
 
 ### Enhanced Form Pattern (Current Usage)
 
 ```svelte
-<form {...createPost.enhance(async ({ form, data, submit }) => {
-	try {
-		await submit();
-		form.reset();
+<form
+	{...createPost.enhance(async ({ form, data, submit }) => {
+		try {
+			await submit();
+			form.reset();
 
-		showToast('Successfully published!');
-	} catch (error) {
-		showToast('Oh no! Something went wrong');
-	}
-})}>
+			showToast('Successfully published!');
+		} catch (error) {
+			showToast('Oh no! Something went wrong');
+		}
+	})}
+>
 	<!-- -->
 </form>
-
 ```
 
 ### Validation with Valibot

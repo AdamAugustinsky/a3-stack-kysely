@@ -27,6 +27,8 @@
 					loginError = undefined;
 					isLoading = true;
 
+					console.log('Submitting signin');
+
 					try {
 						await submit();
 						// Success - redirect will be handled automatically by SvelteKit

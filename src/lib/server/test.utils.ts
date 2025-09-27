@@ -5,8 +5,10 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { createElysiaApp } from './elysia';
 import { organization } from 'better-auth/plugins';
+import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { betterAuth } from 'better-auth';
 import type { DB } from './db/db.types';
+import type { RequestEvent } from '@sveltejs/kit';
 
 export const createTestDb = async () => {
 	const { dialect, client } = await KyselyPGlite.create();
@@ -34,11 +36,18 @@ export const createTestDb = async () => {
 export const createElysiaEdenTestApp = async () => {
 	const { db, cleanup } = await createTestDb();
 
+
+	const dummyGetRequestEvent = () => ({
+		request: {
+			headers: new Headers()
+		}
+	} as RequestEvent);
+
 	// Setup auth for tests
 	const auth = betterAuth({
 		database: { type: 'postgres', db },
 		emailAndPassword: { enabled: true },
-		plugins: [organization()]
+		plugins: [sveltekitCookies(dummyGetRequestEvent), organization()]
 	});
 
 	const testElysiaApp = createElysiaApp(db, auth);

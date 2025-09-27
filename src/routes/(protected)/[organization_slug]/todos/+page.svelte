@@ -165,7 +165,7 @@
 		<div class="py-8 text-center">
 			<p class="text-destructive">Failed to load tasks. Please try again.</p>
 		</div>
-	{:else if todosQuery.current && todosQuery.current.length > 0}
+	{:else if todosQuery.current}
 		<TodoDataTable
 			data={todosQuery.current}
 			onEdit={handleEditTodo}

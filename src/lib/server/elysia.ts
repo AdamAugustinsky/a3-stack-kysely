@@ -126,10 +126,19 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 						if (!organizationId) {
 							throw new Error('No organization selected');
 						}
+						const updates: Record<string, unknown> = {};
+						if (body.text !== undefined) updates.text = body.text;
+						if (body.label !== undefined) updates.label = body.label;
+						if (body.status !== undefined) updates.status = body.status;
+						if (body.priority !== undefined) updates.priority = body.priority;
+						if (body.completed !== undefined) updates.completed = body.completed;
+						if (Object.keys(updates).length === 0) {
+							throw new Error('No updates provided');
+						}
 						return db
 							.updateTable('todo')
 							.set({
-								...body,
+								...updates,
 								updated_at: new Date()
 							})
 							.where('id', '=', Number(id))
@@ -139,16 +148,23 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 					},
 					{
 						body: t.Object({
-							text: t.String(),
-							label: t.Union([t.Literal('bug'), t.Literal('feature'), t.Literal('documentation')]),
-							status: t.Union([
-								t.Literal('backlog'),
-								t.Literal('todo'),
-								t.Literal('in progress'),
-								t.Literal('done'),
-								t.Literal('canceled')
-							]),
-							priority: t.Union([t.Literal('low'), t.Literal('medium'), t.Literal('high')])
+							text: t.Optional(t.String()),
+							label: t.Optional(
+								t.Union([t.Literal('bug'), t.Literal('feature'), t.Literal('documentation')])
+							),
+							status: t.Optional(
+								t.Union([
+									t.Literal('backlog'),
+									t.Literal('todo'),
+									t.Literal('in progress'),
+									t.Literal('done'),
+									t.Literal('canceled')
+								])
+							),
+							priority: t.Optional(
+								t.Union([t.Literal('low'), t.Literal('medium'), t.Literal('high')])
+							),
+							completed: t.Optional(t.Boolean())
 						})
 					}
 				)
@@ -171,10 +187,18 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 						if (!organizationId) {
 							throw new Error('No organization selected');
 						}
+						const updates: Record<string, unknown> = {};
+						if (body.updates.label !== undefined) updates.label = body.updates.label;
+						if (body.updates.status !== undefined) updates.status = body.updates.status;
+						if (body.updates.priority !== undefined) updates.priority = body.updates.priority;
+						if (body.updates.completed !== undefined) updates.completed = body.updates.completed;
+						if (Object.keys(updates).length === 0) {
+							throw new Error('No updates provided');
+						}
 						return db
 							.updateTable('todo')
 							.set({
-								...body.updates,
+								...updates,
 								updated_at: new Date()
 							})
 							.where('id', 'in', body.ids)
@@ -200,7 +224,8 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 								),
 								priority: t.Optional(
 									t.Union([t.Literal('low'), t.Literal('medium'), t.Literal('high')])
-								)
+								),
+								completed: t.Optional(t.Boolean())
 							})
 						})
 					}
