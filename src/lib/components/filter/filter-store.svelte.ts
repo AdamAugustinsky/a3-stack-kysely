@@ -24,7 +24,6 @@ function getInitialFilters(): Filter[] {
 	return [];
 }
 
-
 export class FilterStore {
 	filters = $state<Filter[]>(getInitialFilters());
 	lastUrlFilters = $state<string>(page.url.searchParams.get('filters') || '');
@@ -44,7 +43,6 @@ export class FilterStore {
 				this.filters = [];
 			}
 		}
-
 
 		$effect(() => {
 			const currentUrlFilters = page.url.searchParams.get('filters') || '';
@@ -79,7 +77,6 @@ export class FilterStore {
 				});
 			}
 		});
-
 	}
 
 	// Add a new filter

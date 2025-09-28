@@ -146,7 +146,7 @@
 					'h-7 gap-1.5 rounded-md border px-2 text-xs font-normal transition-all',
 					store.count > 0
 						? 'border-primary/20 bg-primary/5 text-primary hover:border-primary/30 hover:bg-primary/10'
-						: 'border-border hover:bg-muted/40 border-dashed hover:border-solid',
+						: 'border-dashed border-border hover:border-solid hover:bg-muted/40',
 					className
 				)}
 			>
@@ -154,7 +154,7 @@
 				<span class="font-medium">{placeholder}</span>
 				{#if store.count > 0}
 					<span
-						class="bg-primary text-primary-foreground ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold"
+						class="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground"
 					>
 						{store.count}
 					</span>
@@ -163,7 +163,7 @@
 		{/snippet}
 	</Popover.Trigger>
 	<Popover.Content
-		class="border-border/50 bg-background/95 w-[320px] p-0 shadow-lg backdrop-blur-sm"
+		class="w-[320px] border-border/50 bg-background/95 p-0 shadow-lg backdrop-blur-sm"
 		align="start"
 		onkeydown={handleKeyDown}
 	>
@@ -172,7 +172,7 @@
 			<Command.Root>
 				<Command.Input
 					placeholder="Search fields..."
-					class="placeholder:text-muted-foreground/70 flex h-9 w-full rounded-md bg-transparent py-2.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
+					class="flex h-9 w-full rounded-md bg-transparent py-2.5 text-sm outline-none placeholder:text-muted-foreground/70 disabled:cursor-not-allowed disabled:opacity-50"
 				/>
 				<Command.List>
 					<Command.Empty>No fields found.</Command.Empty>
@@ -180,14 +180,14 @@
 						{#each config as field (field.field)}
 							<Command.Item
 								onSelect={() => selectField(field)}
-								class="hover:bg-muted/40 data-[selected]:bg-muted/60 flex cursor-pointer items-center gap-2 rounded-sm px-3 py-1.5 text-sm transition-colors"
+								class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-1.5 text-sm transition-colors hover:bg-muted/40 data-[selected]:bg-muted/60"
 							>
 								{#if field.icon}
-									<field.icon class="text-muted-foreground/70 h-4 w-4" />
+									<field.icon class="h-4 w-4 text-muted-foreground/70" />
 								{/if}
 								<span class="flex-1 font-medium">{field.label}</span>
 								{#if field.description}
-									<span class="text-muted-foreground/70 text-xs">
+									<span class="text-xs text-muted-foreground/70">
 										{field.description}
 									</span>
 								{/if}
@@ -201,7 +201,7 @@
 			<div class="flex flex-col">
 				<!-- Header -->
 				<div
-					class="border-border/50 bg-muted/20 flex items-center justify-between border-b px-3 py-2"
+					class="flex items-center justify-between border-b border-border/50 bg-muted/20 px-3 py-2"
 				>
 					<Select.Root
 						type="single"
@@ -214,7 +214,7 @@
 						}}
 					>
 						<Select.Trigger
-							class="text-muted-foreground hover:bg-muted/40 h-6 gap-1.5 border-0 bg-transparent px-1.5 text-xs font-semibold uppercase tracking-wider focus:ring-0 [&>svg]:h-3 [&>svg]:w-3"
+							class="h-6 gap-1.5 border-0 bg-transparent px-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase hover:bg-muted/40 focus:ring-0 [&>svg]:h-3 [&>svg]:w-3"
 						>
 							{#if selectedField.icon}
 								<selectedField.icon class="h-3.5 w-3.5" />
@@ -225,7 +225,7 @@
 							{#each config as field (field.field)}
 								<Select.Item value={field.field} class="flex items-center gap-2 text-sm">
 									{#if field.icon}
-										<field.icon class="text-muted-foreground/70 h-4 w-4" />
+										<field.icon class="h-4 w-4 text-muted-foreground/70" />
 									{/if}
 									{field.label}
 								</Select.Item>
@@ -235,7 +235,7 @@
 					<Button
 						variant="ghost"
 						size="sm"
-						class="hover:bg-muted/60 h-5 px-1.5 text-xs"
+						class="h-5 px-1.5 text-xs hover:bg-muted/60"
 						onclick={() => resetForm()}
 					>
 						Change
@@ -283,7 +283,7 @@
 											class="h-8 flex-1 text-sm"
 											autofocus
 										/>
-										<span class="text-muted-foreground text-xs">days</span>
+										<span class="text-xs text-muted-foreground">days</span>
 									</div>
 								{:else if selectedField.type === 'text'}
 									<Input
@@ -361,7 +361,7 @@
 											bind:value={rangeValue[0]}
 											class="h-8 text-sm"
 										/>
-										<span class="text-muted-foreground text-xs">to</span>
+										<span class="text-xs text-muted-foreground">to</span>
 										<Input
 											type="number"
 											placeholder="Max"
@@ -372,7 +372,7 @@
 								{:else if selectedField.type === 'date'}
 									<div class="space-y-2">
 										<div class="space-y-1">
-											<span class="text-muted-foreground text-xs">From</span>
+											<span class="text-xs text-muted-foreground">From</span>
 											<Calendar
 												type="single"
 												bind:value={dateRangeStart}
@@ -394,7 +394,7 @@
 											/>
 										</div>
 										<div class="space-y-1">
-											<span class="text-muted-foreground text-xs">To</span>
+											<span class="text-xs text-muted-foreground">To</span>
 											<Calendar
 												type="single"
 												bind:value={dateRangeEnd}
@@ -435,7 +435,7 @@
 								<div class="max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
 									{#each selectedField.options as option (option.value)}
 										<label
-											class="hover:bg-muted/60 flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm"
+											class="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-muted/60"
 										>
 											<input
 												type="checkbox"
@@ -463,12 +463,12 @@
 
 					<!-- Actions -->
 					<div
-						class="border-border/50 bg-muted/10 flex items-center justify-end gap-1.5 border-t px-3 py-2"
+						class="flex items-center justify-end gap-1.5 border-t border-border/50 bg-muted/10 px-3 py-2"
 					>
 						<Button
 							variant="ghost"
 							size="sm"
-							class="hover:bg-muted/40 h-7 px-3 text-xs font-medium"
+							class="h-7 px-3 text-xs font-medium hover:bg-muted/40"
 							onclick={() => {
 								resetForm();
 								open = false;
@@ -479,7 +479,7 @@
 						<Button
 							type="submit"
 							size="sm"
-							class="bg-primary hover:bg-primary/90 h-7 px-3 text-xs font-medium"
+							class="h-7 bg-primary px-3 text-xs font-medium hover:bg-primary/90"
 							disabled={!selectedField || !selectedOperator}
 						>
 							Apply

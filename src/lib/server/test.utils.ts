@@ -36,12 +36,12 @@ export const createTestDb = async () => {
 export const createElysiaEdenTestApp = async () => {
 	const { db, cleanup } = await createTestDb();
 
-
-	const dummyGetRequestEvent = () => ({
-		request: {
-			headers: new Headers()
-		}
-	} as RequestEvent);
+	const dummyGetRequestEvent = () =>
+		({
+			request: {
+				headers: new Headers()
+			}
+		}) as RequestEvent;
 
 	// Setup auth for tests
 	const auth = betterAuth({

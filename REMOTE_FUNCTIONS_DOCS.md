@@ -84,15 +84,15 @@ The query returned from `getPosts` works as a [`Promise`](https://developer.mozi
 ```svelte
 <!--- file: src/routes/blog/+page.svelte --->
 <script>
- import { getPosts } from './data.remote';
+	import { getPosts } from './data.remote';
 </script>
 
 <h1>Recent posts</h1>
 
 <ul>
- {#each await getPosts() as { title, slug }}
-  <li><a href="/blog/{slug}">{title}</a></li>
- {/each}
+	{#each await getPosts() as { title, slug }}
+		<li><a href="/blog/{slug}">{title}</a></li>
+	{/each}
 </ul>
 ```
 
@@ -103,23 +103,23 @@ While using `await` is recommended, as an alternative the query also has `loadin
 ```svelte
 <!--- file: src/routes/blog/+page.svelte --->
 <script>
- import { getPosts } from './data.remote';
+	import { getPosts } from './data.remote';
 
- const query = getPosts();
+	const query = getPosts();
 </script>
 
 <h1>Recent posts</h1>
 
 {#if query.error}
- <p>oops!</p>
+	<p>oops!</p>
 {:else if query.loading}
- <p>loading...</p>
+	<p>loading...</p>
 {:else}
- <ul>
-  {#each query.current as { title, slug }}
-   <li><a href="/blog/{slug}">{title}</a></li>
-  {/each}
- </ul>
+	<ul>
+		{#each query.current as { title, slug }}
+			<li><a href="/blog/{slug}">{title}</a></li>
+		{/each}
+	</ul>
 {/if}
 ```
 
@@ -132,11 +132,11 @@ Query functions can accept an argument, such as the `slug` of an individual post
 ```svelte
 <!--- file: src/routes/blog/[slug]/+page.svelte --->
 <script>
- import { getPost } from '../data.remote';
+	import { getPost } from '../data.remote';
 
- let { params } = $props();
+	let { params } = $props();
 
- const post = $derived(await getPost(params.slug));
+	const post = $derived(await getPost(params.slug));
 </script>
 
 <h1>{post.title}</h1><div>{@html post.content}</div>
@@ -214,22 +214,22 @@ export const getWeather = query.batch(v.string(), async (cities) => {
 ```svelte
 <!--- file: Weather.svelte --->
 <script>
- import CityWeather from './CityWeather.svelte';
- import { getWeather } from './weather.remote.js';
+	import CityWeather from './CityWeather.svelte';
+	import { getWeather } from './weather.remote.js';
 
- let { cities } = $props();
- let limit = $state(5);
+	let { cities } = $props();
+	let limit = $state(5);
 </script>
 
 <h2>Weather</h2>
 
 {#each cities.slice(0, limit) as city}
- <h3>{city.name}</h3>
- <CityWeather weather={await getWeather(city.id)} />
+	<h3>{city.name}</h3>
+	<CityWeather weather={await getWeather(city.id)} />
 {/each}
 
 {#if cities.length > limit}
- <button onclick={() => (limit += 5)}> Load more </button>
+	<button onclick={() => (limit += 5)}> Load more </button>
 {/if}
 ```
 
@@ -241,18 +241,18 @@ The `form` function makes it easy to write data to the server. It takes a callba
 /// file: src/routes/blog/data.remote.js
 // @filename: ambient.d.ts
 declare module '$lib/server/database' {
- export function sql(strings: TemplateStringsArray, ...values: any[]): Promise<any[]>;
+	export function sql(strings: TemplateStringsArray, ...values: any[]): Promise<any[]>;
 }
 
 declare module '$lib/server/auth' {
- interface User {
-  name: string;
- }
+	interface User {
+		name: string;
+	}
 
- /**
-  * Gets a user's info from their cookies, using `getRequestEvent`
-  */
- export function getUser(): Promise<User | null>;
+	/**
+	 * Gets a user's info from their cookies, using `getRequestEvent`
+	 */
+	export function getUser(): Promise<User | null>;
 }
 // @filename: index.js
 // ---cut---
@@ -263,34 +263,34 @@ import * as db from '$lib/server/database';
 import * as auth from '$lib/server/auth';
 
 export const getPosts = query(async () => {
- /* ... */
+	/* ... */
 });
 
 export const getPost = query(v.string(), async (slug) => {
- /* ... */
+	/* ... */
 });
 
 export const createPost = form(
- v.object({
-  title: v.pipe(v.string(), v.nonEmpty()),
-  content: v.pipe(v.string(), v.nonEmpty())
- }),
- async ({ title, content }) => {
-  // Check the user is logged in
-  const user = await auth.getUser();
-  if (!user) error(401, 'Unauthorized');
+	v.object({
+		title: v.pipe(v.string(), v.nonEmpty()),
+		content: v.pipe(v.string(), v.nonEmpty())
+	}),
+	async ({ title, content }) => {
+		// Check the user is logged in
+		const user = await auth.getUser();
+		if (!user) error(401, 'Unauthorized');
 
-  const slug = title.toLowerCase().replace(/ /g, '-');
+		const slug = title.toLowerCase().replace(/ /g, '-');
 
-  // Insert into the database
-  await db.sql`
+		// Insert into the database
+		await db.sql`
    INSERT INTO post (slug, title, content)
    VALUES (${slug}, ${title}, ${content})
   `;
 
-  // Redirect to the newly created page
-  redirect(303, `/blog/${slug}`);
- }
+		// Redirect to the newly created page
+		redirect(303, `/blog/${slug}`);
+	}
 );
 ```
 
@@ -299,23 +299,23 @@ export const createPost = form(
 ```svelte
 <!--- file: src/routes/blog/new/+page.svelte --->
 <script>
- import { createPost } from '../data.remote';
+	import { createPost } from '../data.remote';
 </script>
 
 <h1>Create a new post</h1>
 
 <form {...createPost}>
- <label>
-  <h2>Title</h2>
-  <input name="title" />
- </label>
+	<label>
+		<h2>Title</h2>
+		<input name="title" />
+	</label>
 
- <label>
-  <h2>Write your post</h2>
-  <textarea name="content"></textarea>
- </label>
+	<label>
+		<h2>Write your post</h2>
+		<textarea name="content"></textarea>
+	</label>
 
- <button>Publish!</button>
+	<button>Publish!</button>
 </form>
 ```
 
@@ -327,19 +327,19 @@ import * as v from 'valibot';
 import { form } from '$app/server';
 
 export const setCount = form(
- v.object({
-  // Valibot:
-  count: v.pipe(
-   v.string(),
-   v.transform((s) => Number(s)),
-   v.number()
-  )
-  // Zod:
-  // count: z.coerce.number<string>()
- }),
- async ({ count }) => {
-  // ...
- }
+	v.object({
+		// Valibot:
+		count: v.pipe(
+			v.string(),
+			v.transform((s) => Number(s)),
+			v.number()
+		)
+		// Zod:
+		// count: z.coerce.number<string>()
+	}),
+	async ({ count }) => {
+		// ...
+	}
 );
 ```
 
@@ -357,8 +357,8 @@ The `name` attributes on the form controls must correspond to the properties of 
 <input name="name.first" />
 <input name="name.last" />
 {#each jobs as job, idx}
- <input name="jobs[{idx}].title" />
- <input name="jobs[{idx}].company" />
+	<input name="jobs[{idx}].title" />
+	<input name="jobs[{idx}].company" />
 {/each}
 ```
 
@@ -389,31 +389,31 @@ If the submitted data doesn't pass the schema, the callback will not run. Instea
 
 ```svelte
 <form {...createPost}>
- <label>
-  <h2>Title</h2>
+	<label>
+		<h2>Title</h2>
 
-  +++ {#if createPost.issues.title}
-   {#each createPost.issues.title as issue}
-    <p class="issue">{issue.message}</p>
-   {/each}
-  {/if}+++
+		+++ {#if createPost.issues.title}
+			{#each createPost.issues.title as issue}
+				<p class="issue">{issue.message}</p>
+			{/each}
+		{/if}+++
 
-  <input name="title" +++aria-invalid="{!!createPost.issues.title}+++" />
- </label>
+		<input name="title" +++aria-invalid="{!!createPost.issues.title}+++" />
+	</label>
 
- <label>
-  <h2>Write your post</h2>
+	<label>
+		<h2>Write your post</h2>
 
-  +++ {#if createPost.issues.content}
-   {#each createPost.issues.content as issue}
-    <p class="issue">{issue.message}</p>
-   {/each}
-  {/if}+++
+		+++ {#if createPost.issues.content}
+			{#each createPost.issues.content as issue}
+				<p class="issue">{issue.message}</p>
+			{/each}
+		{/if}+++
 
-  <textarea name="content" +++aria-invalid="{!!createPost.issues.content}+++"></textarea>
- </label>
+		<textarea name="content" +++aria-invalid="{!!createPost.issues.content}+++"></textarea>
+	</label>
 
- <button>Publish!</button>
+	<button>Publish!</button>
 </form>
 ```
 
@@ -421,7 +421,7 @@ You don't need to wait until the form is submitted to validate the data — you 
 
 ```svelte
 <form {...createPost} oninput={() => createPost.validate()}>
- <!-- -->
+	<!-- -->
 </form>
 ```
 
@@ -455,12 +455,12 @@ The form object contains a `input` property which reflects its current value. As
 
 ```svelte
 <form {...createPost}>
- <!-- -->
+	<!-- -->
 </form>
 
 <div class="preview">
- <h2>{createPost.input.title}</h2>
- <div>{@html render(createPost.input.content)}</div>
+	<h2>{createPost.input.title}</h2>
+	<div>{@html render(createPost.input.content)}</div>
 </div>
 ```
 
@@ -472,26 +472,26 @@ You can prevent sensitive data (such as passwords and credit card numbers) from 
 
 ```svelte
 <form {...register}>
- <label>
-  Username
-  <input
-   name="username"
-   value={register.input.username}
-   aria-invalid={!!register.issues.username}
-  />
- </label>
+	<label>
+		Username
+		<input
+			name="username"
+			value={register.input.username}
+			aria-invalid={!!register.issues.username}
+		/>
+	</label>
 
- <label>
-  Password
-  <input
-   type="password"
-   +++name="_password"
-   +++
-   +++aria-invalid="{!!register.issues._password}+++"
-  />
- </label>
+	<label>
+		Password
+		<input
+			type="password"
+			+++name="_password"
+			+++
+			+++aria-invalid="{!!register.issues._password}+++"
+		/>
+	</label>
 
- <button>Sign up!</button>
+	<button>Sign up!</button>
 </form>
 ```
 
@@ -553,18 +553,18 @@ The example above uses [`redirect(...)`](@sveltejs-kit#redirect), which sends th
 /// file: src/routes/blog/data.remote.js
 // @filename: ambient.d.ts
 declare module '$lib/server/database' {
- export function sql(strings: TemplateStringsArray, ...values: any[]): Promise<any[]>;
+	export function sql(strings: TemplateStringsArray, ...values: any[]): Promise<any[]>;
 }
 
 declare module '$lib/server/auth' {
- interface User {
-  name: string;
- }
+	interface User {
+		name: string;
+	}
 
- /**
-  * Gets a user's info from their cookies, using `getRequestEvent`
-  */
- export function getUser(): Promise<User | null>;
+	/**
+	 * Gets a user's info from their cookies, using `getRequestEvent`
+	 */
+	export function getUser(): Promise<User | null>;
 }
 // @filename: index.js
 import * as v from 'valibot';
@@ -574,40 +574,40 @@ import * as db from '$lib/server/database';
 import * as auth from '$lib/server/auth';
 
 export const getPosts = query(async () => {
- /* ... */
+	/* ... */
 });
 
 export const getPost = query(v.string(), async (slug) => {
- /* ... */
+	/* ... */
 });
 
 // ---cut---
 export const createPost = form(
- v.object({
-  /* ... */
- }),
- async (data) => {
-  // ...
+	v.object({
+		/* ... */
+	}),
+	async (data) => {
+		// ...
 
-  return { success: true };
- }
+		return { success: true };
+	}
 );
 ```
 
 ```svelte
 <!--- file: src/routes/blog/new/+page.svelte --->
 <script>
- import { createPost } from '../data.remote';
+	import { createPost } from '../data.remote';
 </script>
 
 <h1>Create a new post</h1>
 
 <form {...createPost}>
- <!-- -->
+	<!-- -->
 </form>
 
 {#if createPost.result?.success}
- <p>Successfully published!</p>
+	<p>Successfully published!</p>
 {/if}
 ```
 
@@ -624,25 +624,25 @@ We can customize what happens when the form is submitted with the `enhance` meth
 ```svelte
 <!--- file: src/routes/blog/new/+page.svelte --->
 <script>
- import { createPost } from '../data.remote';
- import { showToast } from '$lib/toast';
+	import { createPost } from '../data.remote';
+	import { showToast } from '$lib/toast';
 </script>
 
 <h1>Create a new post</h1>
 
 <form
- {...createPost.enhance(async ({ form, data, submit }) => {
-  try {
-   await submit();
-   form.reset();
+	{...createPost.enhance(async ({ form, data, submit }) => {
+		try {
+			await submit();
+			form.reset();
 
-   showToast('Successfully published!');
-  } catch (error) {
-   showToast('Oh no! Something went wrong');
-  }
- })}
+			showToast('Successfully published!');
+		} catch (error) {
+			showToast('Oh no! Something went wrong');
+		}
+	})}
 >
- <!-- -->
+	<!-- -->
 </form>
 ```
 
@@ -654,7 +654,7 @@ To enable client-driven [single-flight mutations](#form-Single-flight-mutations)
 import type { RemoteQuery, RemoteQueryOverride } from '@sveltejs/kit';
 interface Post {}
 declare function submit(): Promise<any> & {
- updates(...queries: Array<RemoteQuery<any> | RemoteQueryOverride>): Promise<any>;
+	updates(...queries: Array<RemoteQuery<any> | RemoteQueryOverride>): Promise<any>;
 };
 
 declare function getPosts(): RemoteQuery<Post[]>;
@@ -668,7 +668,7 @@ We can also _override_ the current data while the submission is ongoing:
 import type { RemoteQuery, RemoteQueryOverride } from '@sveltejs/kit';
 interface Post {}
 declare function submit(): Promise<any> & {
- updates(...queries: Array<RemoteQuery<any> | RemoteQueryOverride>): Promise<any>;
+	updates(...queries: Array<RemoteQuery<any> | RemoteQueryOverride>): Promise<any>;
 };
 
 declare function getPosts(): RemoteQuery<Post[]>;
@@ -690,22 +690,22 @@ This attribute exists on the `buttonProps` property of a form object:
 ```svelte
 <!--- file: src/routes/login/+page.svelte --->
 <script>
- import { login, register } from '$lib/auth';
+	import { login, register } from '$lib/auth';
 </script>
 
 <form {...login}>
- <label>
-  Your username
-  <input name="username" />
- </label>
+	<label>
+		Your username
+		<input name="username" />
+	</label>
 
- <label>
-  Your password
-  <input name="password" type="password" />
- </label>
+	<label>
+		Your password
+		<input name="password" type="password" />
+	</label>
 
- <button>login</button>
- <button {...register.buttonProps}>register</button>
+	<button>login</button>
+	<button {...register.buttonProps}>register</button>
 </form>
 ```
 
@@ -723,7 +723,7 @@ As with `query` and `form`, if the function accepts an argument, it should be [v
 /// file: likes.remote.js
 // @filename: ambient.d.ts
 declare module '$lib/server/database' {
- export function sql(strings: TemplateStringsArray, ...values: any[]): Promise<any[]>;
+	export function sql(strings: TemplateStringsArray, ...values: any[]): Promise<any[]>;
 }
 // @filename: index.js
 // ---cut---
@@ -732,17 +732,17 @@ import { query, command } from '$app/server';
 import * as db from '$lib/server/database';
 
 export const getLikes = query(v.string(), async (id) => {
- const [row] = await db.sql`
+	const [row] = await db.sql`
   SELECT likes
   FROM item
   WHERE id = ${id}
  `;
 
- return row.likes;
+	return row.likes;
 });
 
 export const addLike = command(v.string(), async (id) => {
- await db.sql`
+	await db.sql`
   UPDATE item
   SET likes = likes + 1
   WHERE id = ${id}
@@ -755,22 +755,22 @@ Now simply call `addLike`, from (for example) an event handler:
 ```svelte
 <!--- file: +page.svelte --->
 <script>
- import { getLikes, addLike } from './likes.remote';
- import { showToast } from '$lib/toast';
+	import { getLikes, addLike } from './likes.remote';
+	import { showToast } from '$lib/toast';
 
- let { item } = $props();
+	let { item } = $props();
 </script>
 
 <button
- onclick={async () => {
-  try {
-   await addLike(item.id);
-  } catch (error) {
-   showToast('Something went wrong!');
-  }
- }}
+	onclick={async () => {
+		try {
+			await addLike(item.id);
+		} catch (error) {
+			showToast('Something went wrong!');
+		}
+	}}
 >
- add like
+	add like
 </button>
 
 <p>likes: {await getLikes(item.id)}</p>
@@ -924,13 +924,13 @@ import { prerender } from '$app/server';
 // ---cut---
 
 export const getPost = prerender(
- v.string(),
- async (slug) => {
-  /* ... */
- },
- {
-  inputs: () => ['first-post', 'second-post', 'third-post']
- }
+	v.string(),
+	async (slug) => {
+		/* ... */
+	},
+	{
+		inputs: () => ['first-post', 'second-post', 'third-post']
+	}
 );
 ```
 
@@ -971,9 +971,9 @@ In the second case, we don't want to give the attacker any help, so SvelteKit wi
 /// file: src/hooks.server.ts
 /** @type {import('@sveltejs/kit').HandleValidationError} */
 export function handleValidationError({ event, issues }) {
- return {
-  message: 'Nice try, hacker!'
- };
+	return {
+		message: 'Nice try, hacker!'
+	};
 }
 ```
 
@@ -984,8 +984,8 @@ If you know what you're doing and want to opt out of validation, you can pass th
 import { query } from '$app/server';
 
 export const getStuff = query('unchecked', async ({ id }: { id: string }) => {
- // the shape might not actually be what TypeScript thinks
- // since bad actors might call this function with other arguments
+	// the shape might not actually be what TypeScript thinks
+	// since bad actors might call this function with other arguments
 });
 ```
 
@@ -1001,20 +1001,20 @@ import { getRequestEvent, query } from '$app/server';
 import { findUser } from '$lib/server/database';
 
 export const getProfile = query(async () => {
- const user = await getUser();
+	const user = await getUser();
 
- return {
-  name: user.name,
-  avatar: user.avatar
- };
+	return {
+		name: user.name,
+		avatar: user.avatar
+	};
 });
 
 // this query could be called from multiple places, but
 // the function will only run once per request
 const getUser = query(() => {
- const { cookies } = getRequestEvent();
+	const { cookies } = getRequestEvent();
 
- return await findUser(cookies.get('session_id'));
+	return await findUser(cookies.get('session_id'));
 });
 ```
 
@@ -1028,17 +1028,17 @@ Inside `query`, `form` and `prerender` functions it is possible to use the [`red
 
 ```svelte
 <form
- {...createPost.enhance(async ({ form, data, submit }) => {
-  try {
-   await submit();
-   form.reset();
+	{...createPost.enhance(async ({ form, data, submit }) => {
+		try {
+			await submit();
+			form.reset();
 
-   showToast('Successfully published!');
-  } catch (error) {
-   showToast('Oh no! Something went wrong');
-  }
- })}
+			showToast('Successfully published!');
+		} catch (error) {
+			showToast('Oh no! Something went wrong');
+		}
+	})}
 >
- <!-- -->
+	<!-- -->
 </form>
 ```

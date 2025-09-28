@@ -98,9 +98,9 @@ Things to keep in mind while developing:
 ```svelte
 <Kbd content="/" />
 <div class="flex gap-0.5">
- <Kbd content="⌘" />
- <Kbd content="K" />
- <!-- Or platform-aware: 'Ctrl' + 'K' on non-mac -->
+	<Kbd content="⌘" />
+	<Kbd content="K" />
+	<!-- Or platform-aware: 'Ctrl' + 'K' on non-mac -->
 </div>
 <!-- On primary buttons / colored surfaces -->
 <Kbd content="C" variant="onPrimary" />

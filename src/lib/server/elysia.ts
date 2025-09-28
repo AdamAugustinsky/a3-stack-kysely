@@ -4,11 +4,6 @@ import type { Kysely } from 'kysely';
 import type { DB } from './db/db.types';
 import { applyFilters } from '@/utils/kysely-filter-builder';
 import * as v from 'valibot';
-import { filterSchema } from '@/utils/filter';
-
-const filterBody = v.object({
-	filters: v.array(filterSchema)
-});
 
 const nameBody = v.object({
 	name: v.string()
@@ -54,7 +49,9 @@ const updateTodoBody = v.object({
 const bulkUpdateBody = v.object({
 	ids: v.array(v.number()),
 	updates: v.object({
-		label: v.optional(v.union([v.literal('bug'), v.literal('feature'), v.literal('documentation')])),
+		label: v.optional(
+			v.union([v.literal('bug'), v.literal('feature'), v.literal('documentation')])
+		),
 		status: v.optional(
 			v.union([
 				v.literal('backlog'),
@@ -108,32 +105,32 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 		})
 		.group('/todo', (app) =>
 			app
-				.get(
-					'/',
-					async ({ organizationId, body }) => {
-						console.log('Todo GET endpoint called');
-						if (!organizationId) {
-							return [];
-						}
-
-						let todoQuery = db
-							.selectFrom('todo')
-							.selectAll()
-							.where('organization_id', '=', organizationId);
-
-						// Apply filters if provided
-						if (body && body.filters && body.filters.length > 0) {
-							todoQuery = applyFilters(todoQuery, body.filters);
-						}
-
-						const result = await todoQuery.execute();
-						return result;
-					},
-
-					{
-						body: filterBody
+				.get('/', async ({ organizationId, query }) => {
+					console.log('Todo GET endpoint called');
+					if (!organizationId) {
+						return [];
 					}
-				)
+
+					let todoQuery = db
+						.selectFrom('todo')
+						.selectAll()
+						.where('organization_id', '=', organizationId);
+
+					// Apply filters if provided
+					if (query.filters) {
+						try {
+							const filters = JSON.parse(query.filters);
+							if (filters && filters.length > 0) {
+								todoQuery = applyFilters(todoQuery, filters);
+							}
+						} catch (error) {
+							console.warn('Failed to parse filters:', error);
+						}
+					}
+
+					const result = await todoQuery.execute();
+					return result;
+				})
 
 				.post(
 					'/',

@@ -18,7 +18,16 @@ export const todoFilterConfig: FilterConfig[] = [
 		icon: TextIcon,
 		placeholder: 'Search in titles...',
 		description: 'Search in task titles',
-		operators: ['contains', 'not_contains', 'starts_with', 'ends_with', 'equals', 'not_equals', 'is_empty', 'is_not_empty'],
+		operators: [
+			'contains',
+			'not_contains',
+			'starts_with',
+			'ends_with',
+			'equals',
+			'not_equals',
+			'is_empty',
+			'is_not_empty'
+		],
 		defaultOperator: 'contains'
 	},
 	{
@@ -27,7 +36,7 @@ export const todoFilterConfig: FilterConfig[] = [
 		type: 'select',
 		icon: CircleIcon,
 		description: 'Task status',
-		options: statuses.map(status => ({
+		options: statuses.map((status) => ({
 			label: status.label,
 			value: status.value
 		})),
@@ -40,7 +49,7 @@ export const todoFilterConfig: FilterConfig[] = [
 		type: 'select',
 		icon: FlagIcon,
 		description: 'Task priority level',
-		options: priorities.map(priority => ({
+		options: priorities.map((priority) => ({
 			label: priority.label,
 			value: priority.value
 		})),
@@ -53,7 +62,7 @@ export const todoFilterConfig: FilterConfig[] = [
 		type: 'select',
 		icon: TagIcon,
 		description: 'Task category',
-		options: labels.map(label => ({
+		options: labels.map((label) => ({
 			label: label.label,
 			value: label.value
 		})),
@@ -117,7 +126,16 @@ export const todoFilterConfig: FilterConfig[] = [
 		icon: HashIcon,
 		description: 'Unique task identifier',
 		placeholder: 'Enter task ID...',
-		operators: ['equals', 'not_equals', 'greater_than', 'less_than', 'greater_than_or_equal', 'less_than_or_equal', 'between', 'not_between'],
+		operators: [
+			'equals',
+			'not_equals',
+			'greater_than',
+			'less_than',
+			'greater_than_or_equal',
+			'less_than_or_equal',
+			'between',
+			'not_between'
+		],
 		defaultOperator: 'equals',
 		min: 1
 	}

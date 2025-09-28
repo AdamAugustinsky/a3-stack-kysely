@@ -5,16 +5,14 @@ import { redirect } from '@sveltejs/kit';
 
 export async function handle({ event, resolve }) {
 	if (event.route.id?.startsWith('/(protected)/')) {
-
 		const session = await auth.api.getSession({
 			headers: event.request.headers
-		})
-
+		});
 
 		if (session) {
 			const organizations = await auth.api.listOrganizations({
 				headers: event.request.headers
-			})
+			});
 			event.locals.session = session.session;
 			event.locals.user = session.user;
 			event.locals.organizations = organizations;

@@ -134,7 +134,7 @@
 		{#each store.filters as filter (filter.id)}
 			{@const fieldConfig = getFieldConfig(filter.field)}
 			<div
-				class="border-border/50 bg-muted/10 hover:border-border hover:bg-muted/20 group inline-flex items-center overflow-hidden rounded-md border text-xs transition-all"
+				class="group inline-flex items-center overflow-hidden rounded-md border border-border/50 bg-muted/10 text-xs transition-all hover:border-border hover:bg-muted/20"
 			>
 				<!-- Field -->
 				<Popover.Root open={editingFilterId === filter.id && editingPart === 'field'}>
@@ -143,17 +143,17 @@
 							<button
 								{...props}
 								onclick={() => startEdit(filter.id, 'field')}
-								class="text-foreground/90 hover:bg-muted/40 flex items-center gap-1.5 px-2 py-1 font-medium transition-colors"
+								class="flex items-center gap-1.5 px-2 py-1 font-medium text-foreground/90 transition-colors hover:bg-muted/40"
 							>
 								{#if fieldConfig?.icon}
-									<fieldConfig.icon class="text-muted-foreground/70 h-3 w-3" />
+									<fieldConfig.icon class="h-3 w-3 text-muted-foreground/70" />
 								{/if}
 								{fieldConfig?.label || filter.field}
 							</button>
 						{/snippet}
 					</Popover.Trigger>
 					<Popover.Content
-						class="border-border/50 bg-background/95 w-[200px] p-2 shadow-lg backdrop-blur-sm"
+						class="w-[200px] border-border/50 bg-background/95 p-2 shadow-lg backdrop-blur-sm"
 					>
 						<Select.Root
 							type="single"
@@ -170,7 +170,7 @@
 									{#if getFieldConfig(tempField || '')?.icon}
 										{@const IconComponent = getFieldConfig(tempField || '')?.icon}
 										{#if IconComponent}
-											<IconComponent class="text-muted-foreground/70 h-3.5 w-3.5" />
+											<IconComponent class="h-3.5 w-3.5 text-muted-foreground/70" />
 										{/if}
 									{/if}
 									{getFieldConfig(tempField || '')?.label || 'Select field'}
@@ -180,7 +180,7 @@
 								{#each config as field (field.field)}
 									<Select.Item value={field.field} class="flex items-center gap-2 text-sm">
 										{#if field.icon}
-											<field.icon class="text-muted-foreground/70 h-3.5 w-3.5" />
+											<field.icon class="h-3.5 w-3.5 text-muted-foreground/70" />
 										{/if}
 										{field.label}
 									</Select.Item>
@@ -197,14 +197,14 @@
 							<button
 								{...props}
 								onclick={() => startEdit(filter.id, 'operator')}
-								class="border-border/30 text-muted-foreground hover:bg-muted/40 border-l px-2 py-1 transition-colors"
+								class="border-l border-border/30 px-2 py-1 text-muted-foreground transition-colors hover:bg-muted/40"
 							>
 								{OPERATOR_LABELS[filter.operator]}
 							</button>
 						{/snippet}
 					</Popover.Trigger>
 					<Popover.Content
-						class="border-border/50 bg-background/95 w-[200px] p-2 shadow-lg backdrop-blur-sm"
+						class="w-[200px] border-border/50 bg-background/95 p-2 shadow-lg backdrop-blur-sm"
 					>
 						<Select.Root
 							type="single"
@@ -238,14 +238,14 @@
 								<button
 									{...props}
 									onclick={() => startEdit(filter.id, 'value')}
-									class="border-border/30 text-foreground hover:bg-muted/40 border-l px-2 py-1 font-semibold transition-colors"
+									class="border-l border-border/30 px-2 py-1 font-semibold text-foreground transition-colors hover:bg-muted/40"
 								>
 									{formatValue(filter.value, filter.type, fieldConfig)}
 								</button>
 							{/snippet}
 						</Popover.Trigger>
 						<Popover.Content
-							class="border-border/50 bg-background/95 w-[250px] p-3 shadow-lg backdrop-blur-sm"
+							class="w-[250px] border-border/50 bg-background/95 p-3 shadow-lg backdrop-blur-sm"
 						>
 							<form
 								onsubmit={(e) => {
@@ -358,7 +358,7 @@
 				<!-- Remove button -->
 				<button
 					onclick={() => removeFilter(filter.id)}
-					class="border-border/50 text-muted-foreground hover:bg-destructive/10 hover:text-destructive border-l px-1.5 py-1.5 transition-all"
+					class="border-l border-border/50 px-1.5 py-1.5 text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive"
 					aria-label="Remove filter"
 				>
 					<XIcon class="h-3 w-3" />
@@ -371,7 +371,7 @@
 				variant="ghost"
 				size="sm"
 				onclick={clearAll}
-				class="text-muted-foreground hover:text-destructive h-6 px-2 text-xs font-medium transition-colors"
+				class="h-6 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-destructive"
 			>
 				Clear all
 			</Button>

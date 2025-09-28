@@ -17,8 +17,10 @@ const toTask = (input: {
 	readonly created_at: string | Date;
 	readonly updated_at: string | Date;
 }): Task => {
-	const createdAt = input.created_at instanceof Date ? input.created_at : new Date(input.created_at);
-	const updatedAt = input.updated_at instanceof Date ? input.updated_at : new Date(input.updated_at);
+	const createdAt =
+		input.created_at instanceof Date ? input.created_at : new Date(input.created_at);
+	const updatedAt =
+		input.updated_at instanceof Date ? input.updated_at : new Date(input.updated_at);
 	return v.parse(Task, {
 		id: input.id,
 		text: input.text,
@@ -34,13 +36,13 @@ const toTask = (input: {
 const getTodosSchema = v.optional(v.array(filterSchema));
 
 export const getTodos = query(getTodosSchema, async (filters) => {
+	const headers = headersToRecord(getRequestEvent().request.headers);
+	const queryParams = filters && filters.length > 0 ? { filters: JSON.stringify(filters) } : {};
+
 	const response = await eden.api.todo.get({
-		filters: filters ?? []
-	},
-		{
-			headers: headersToRecord(getRequestEvent().request.headers),
-		}
-	);
+		headers,
+		query: queryParams
+	});
 
 	if (response.error) {
 		console.error('Remote function - API error:', response.error);
@@ -100,7 +102,8 @@ export const createTodo = form(
 		}
 
 		return { success: true };
-	});
+	}
+);
 
 // Delete a single todo
 const deleteTodoSchema = v.object({

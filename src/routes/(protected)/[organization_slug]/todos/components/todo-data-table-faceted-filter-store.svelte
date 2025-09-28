@@ -30,14 +30,14 @@
 
 	// Get currently selected values for this field
 	const selectedValues = $derived.by(() => {
-		const fieldFilters = filterStore.filters.filter(f =>
-			f.field === field && (f.operator === 'is' || f.operator === 'is_any_of')
+		const fieldFilters = filterStore.filters.filter(
+			(f) => f.field === field && (f.operator === 'is' || f.operator === 'is_any_of')
 		);
 		const values = new Set<string>();
 
 		for (const filter of fieldFilters) {
 			if (Array.isArray(filter.value)) {
-				filter.value.forEach(v => values.add(String(v)));
+				filter.value.forEach((v) => values.add(String(v)));
 			} else if (filter.value !== null && filter.value !== undefined) {
 				values.add(String(filter.value));
 			}
@@ -56,8 +56,8 @@
 		}
 
 		// Remove existing filters for this field with 'is' or 'is_any_of' operators
-		filterStore.filters = filterStore.filters.filter(f =>
-			!(f.field === field && (f.operator === 'is' || f.operator === 'is_any_of'))
+		filterStore.filters = filterStore.filters.filter(
+			(f) => !(f.field === field && (f.operator === 'is' || f.operator === 'is_any_of'))
 		);
 
 		// Add new filter if we have values
@@ -73,8 +73,8 @@
 	}
 
 	function clearFilters() {
-		filterStore.filters = filterStore.filters.filter(f =>
-			!(f.field === field && (f.operator === 'is' || f.operator === 'is_any_of'))
+		filterStore.filters = filterStore.filters.filter(
+			(f) => !(f.field === field && (f.operator === 'is' || f.operator === 'is_any_of'))
 		);
 	}
 </script>
@@ -82,12 +82,7 @@
 <Popover.Root>
 	<Popover.Trigger>
 		{#snippet child({ props })}
-			<Button
-				{...props}
-				variant="outline"
-				size="sm"
-				class="h-8 border-dashed"
-			>
+			<Button {...props} variant="outline" size="sm" class="h-8 border-dashed">
 				<PlusCircleIcon class="mr-2 h-4 w-4" />
 				{title}
 				{#if selectedValues.size > 0}
@@ -122,10 +117,7 @@
 				<Command.Empty>No results found.</Command.Empty>
 				<Command.Group>
 					{#each options as option (option.value)}
-						<Command.Item
-							onSelect={() => toggleValue(option.value)}
-							class="cursor-pointer"
-						>
+						<Command.Item onSelect={() => toggleValue(option.value)} class="cursor-pointer">
 							<div
 								class={cn(
 									'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
