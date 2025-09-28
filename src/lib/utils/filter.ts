@@ -290,7 +290,47 @@ export function generateFilterId(): string {
 export const filterSchema = v.object({
     id: v.string(),
     field: v.string(),
-    operator: v.string(),
+    operator: v.union([
+        // Text operators
+        v.literal('equals'),
+        v.literal('not_equals'),
+        v.literal('contains'),
+        v.literal('not_contains'),
+        v.literal('starts_with'),
+        v.literal('ends_with'),
+        v.literal('is_empty'),
+        v.literal('is_not_empty'),
+        // Number operators
+        v.literal('greater_than'),
+        v.literal('less_than'),
+        v.literal('greater_than_or_equal'),
+        v.literal('less_than_or_equal'),
+        v.literal('between'),
+        v.literal('not_between'),
+        // Date operators
+        v.literal('before'),
+        v.literal('after'),
+        v.literal('on_or_before'),
+        v.literal('on_or_after'),
+        v.literal('is_today'),
+        v.literal('is_yesterday'),
+        v.literal('is_this_week'),
+        v.literal('is_this_month'),
+        v.literal('is_this_year'),
+        v.literal('is_last_n_days'),
+        v.literal('is_next_n_days'),
+        // Select operators
+        v.literal('is'),
+        v.literal('is_not'),
+        v.literal('is_any_of'),
+        v.literal('is_none_of'),
+        // Boolean operators
+        v.literal('is_true'),
+        v.literal('is_false'),
+        // UTM operators
+        v.literal('exists'),
+        v.literal('not_exists')
+    ]),
     value: v.any(),
     type: v.union([
         v.literal('text'),

@@ -1,8 +1,77 @@
-import { Elysia, t } from 'elysia';
+import { Elysia } from 'elysia';
 import { createAuth } from './auth';
 import type { Kysely } from 'kysely';
 import type { DB } from './db/db.types';
-import { applyFilters, parseFilters } from '@/utils/kysely-filter-builder';
+import { applyFilters } from '@/utils/kysely-filter-builder';
+import * as v from 'valibot';
+import { filterSchema } from '@/utils/filter';
+
+const filterBody = v.object({
+	filters: v.array(filterSchema)
+});
+
+const nameBody = v.object({
+	name: v.string()
+});
+
+const createTodoBody = v.object({
+	text: v.string(),
+	completed: v.optional(v.boolean()),
+	priority: v.optional(v.union([v.literal('low'), v.literal('medium'), v.literal('high')])),
+	status: v.optional(
+		v.union([
+			v.literal('backlog'),
+			v.literal('todo'),
+			v.literal('in progress'),
+			v.literal('done'),
+			v.literal('canceled')
+		])
+	),
+	label: v.optional(v.union([v.literal('bug'), v.literal('feature'), v.literal('documentation')]))
+});
+
+const toggleTodoBody = v.object({
+	id: v.number(),
+	completed: v.boolean()
+});
+
+const updateTodoBody = v.object({
+	text: v.optional(v.string()),
+	label: v.optional(v.union([v.literal('bug'), v.literal('feature'), v.literal('documentation')])),
+	status: v.optional(
+		v.union([
+			v.literal('backlog'),
+			v.literal('todo'),
+			v.literal('in progress'),
+			v.literal('done'),
+			v.literal('canceled')
+		])
+	),
+	priority: v.optional(v.union([v.literal('low'), v.literal('medium'), v.literal('high')])),
+	completed: v.optional(v.boolean())
+});
+
+const bulkUpdateBody = v.object({
+	ids: v.array(v.number()),
+	updates: v.object({
+		label: v.optional(v.union([v.literal('bug'), v.literal('feature'), v.literal('documentation')])),
+		status: v.optional(
+			v.union([
+				v.literal('backlog'),
+				v.literal('todo'),
+				v.literal('in progress'),
+				v.literal('done'),
+				v.literal('canceled')
+			])
+		),
+		priority: v.optional(v.union([v.literal('low'), v.literal('medium'), v.literal('high')])),
+		completed: v.optional(v.boolean())
+	})
+});
+
+const bulkDeleteBody = v.object({
+	ids: v.array(v.number())
+});
 
 export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAuth>) =>
 	new Elysia({ prefix: '/api' })
@@ -35,56 +104,34 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 		})
 		.get('/', () => 'hi')
 		.post('/', ({ body }) => body, {
-			body: t.Object({
-				name: t.String()
-			})
+			body: nameBody
 		})
 		.group('/todo', (app) =>
 			app
-				.get('/', async ({ organizationId, body }) => {
-					console.log('Todo GET endpoint called');
-					if (!organizationId) {
-						return [];
-					}
+				.get(
+					'/',
+					async ({ organizationId, body }) => {
+						console.log('Todo GET endpoint called');
+						if (!organizationId) {
+							return [];
+						}
 
-					let todoQuery = db
-						.selectFrom('todo')
-						.selectAll()
-						.where('organization_id', '=', organizationId);
+						let todoQuery = db
+							.selectFrom('todo')
+							.selectAll()
+							.where('organization_id', '=', organizationId);
 
-					// Apply filters if provided
-					if (body && body.filters && body.filters.length > 0) {
-						const normalizedFilters = body.filters.map((f, idx) => ({
-							id: `req-${idx}`,
-							field: f.field,
-							operator: f.operator as any,
-							value: f.value,
-							type: f.type as any
-						}));
-						todoQuery = applyFilters(todoQuery, normalizedFilters as any);
-					}
+						// Apply filters if provided
+						if (body && body.filters && body.filters.length > 0) {
+							todoQuery = applyFilters(todoQuery, body.filters);
+						}
 
-					const result = await todoQuery.execute();
-					return result;
-				},
+						const result = await todoQuery.execute();
+						return result;
+					},
 
 					{
-						body: t.Object({
-							filters: t.Array(t.Object({
-								field: t.String(),
-								operator: t.String(),
-								value: t.Any(),
-								type: t.Union([
-									t.Literal('text'),
-									t.Literal('number'),
-									t.Literal('date'),
-									t.Literal('select'),
-									t.Literal('multiselect'),
-									t.Literal('boolean'),
-									t.Literal('utm')
-								])
-							}))
-						})
+						body: filterBody
 					}
 				)
 
@@ -112,25 +159,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 							.execute();
 					},
 					{
-						body: t.Object({
-							text: t.String(),
-							completed: t.Optional(t.Boolean()),
-							priority: t.Optional(
-								t.Union([t.Literal('low'), t.Literal('medium'), t.Literal('high')])
-							),
-							status: t.Optional(
-								t.Union([
-									t.Literal('backlog'),
-									t.Literal('todo'),
-									t.Literal('in progress'),
-									t.Literal('done'),
-									t.Literal('canceled')
-								])
-							),
-							label: t.Optional(
-								t.Union([t.Literal('bug'), t.Literal('feature'), t.Literal('documentation')])
-							)
-						})
+						body: createTodoBody
 					}
 				)
 
@@ -152,10 +181,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 							.execute();
 					},
 					{
-						body: t.Object({
-							id: t.Number(),
-							completed: t.Boolean()
-						})
+						body: toggleTodoBody
 					}
 				)
 
@@ -186,25 +212,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 							.execute();
 					},
 					{
-						body: t.Object({
-							text: t.Optional(t.String()),
-							label: t.Optional(
-								t.Union([t.Literal('bug'), t.Literal('feature'), t.Literal('documentation')])
-							),
-							status: t.Optional(
-								t.Union([
-									t.Literal('backlog'),
-									t.Literal('todo'),
-									t.Literal('in progress'),
-									t.Literal('done'),
-									t.Literal('canceled')
-								])
-							),
-							priority: t.Optional(
-								t.Union([t.Literal('low'), t.Literal('medium'), t.Literal('high')])
-							),
-							completed: t.Optional(t.Boolean())
-						})
+						body: updateTodoBody
 					}
 				)
 
@@ -246,27 +254,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 							.execute();
 					},
 					{
-						body: t.Object({
-							ids: t.Array(t.Number()),
-							updates: t.Object({
-								label: t.Optional(
-									t.Union([t.Literal('bug'), t.Literal('feature'), t.Literal('documentation')])
-								),
-								status: t.Optional(
-									t.Union([
-										t.Literal('backlog'),
-										t.Literal('todo'),
-										t.Literal('in progress'),
-										t.Literal('done'),
-										t.Literal('canceled')
-									])
-								),
-								priority: t.Optional(
-									t.Union([t.Literal('low'), t.Literal('medium'), t.Literal('high')])
-								),
-								completed: t.Optional(t.Boolean())
-							})
-						})
+						body: bulkUpdateBody
 					}
 				)
 
@@ -284,9 +272,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 							.execute();
 					},
 					{
-						body: t.Object({
-							ids: t.Array(t.Number())
-						})
+						body: bulkDeleteBody
 					}
 				)
 		)
