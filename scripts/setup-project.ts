@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 import { $ } from 'bun';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { writeFileSync, existsSync } from 'fs';
 
 // Colors for terminal output
 const colors = {
@@ -18,31 +17,30 @@ function log(message: string, color = colors.reset) {
 	console.log(`${color}${message}${colors.reset}`);
 }
 
-function prompt(question: string, defaultValue?: string): Promise<string> {
-	return new Promise((resolve) => {
-		const defaultText = defaultValue ? ` (${colors.cyan}${defaultValue}${colors.reset})` : '';
-		process.stdout.write(`${colors.blue}?${colors.reset} ${question}${defaultText}: `);
+async function prompt(question: string, defaultValue?: string): Promise<string> {
+	const defaultText = defaultValue ? ` (${colors.cyan}${defaultValue}${colors.reset})` : '';
+	console.write(`${colors.blue}?${colors.reset} ${question}${defaultText}: `);
 
-		process.stdin.once('data', (data) => {
-			const input = data.toString().trim();
-			resolve(input || defaultValue || '');
-		});
-	});
+	// Read a line from stdin
+	for await (const line of console) {
+		const input = line.trim();
+		return input || defaultValue || '';
+	}
+	return defaultValue || '';
 }
 
-function confirm(question: string, defaultValue = true): Promise<boolean> {
-	return new Promise((resolve) => {
-		const defaultText = defaultValue ? 'Y/n' : 'y/N';
-		process.stdout.write(
-			`${colors.blue}?${colors.reset} ${question} (${colors.cyan}${defaultText}${colors.reset}): `
-		);
+async function confirm(question: string, defaultValue = true): Promise<boolean> {
+	const defaultText = defaultValue ? 'Y/n' : 'y/N';
+	console.write(
+		`${colors.blue}?${colors.reset} ${question} (${colors.cyan}${defaultText}${colors.reset}): `
+	);
 
-		process.stdin.once('data', (data) => {
-			const input = data.toString().trim().toLowerCase();
-			if (input === '') resolve(defaultValue);
-			else resolve(input === 'y' || input === 'yes');
-		});
-	});
+	for await (const line of console) {
+		const input = line.trim().toLowerCase();
+		if (input === '') return defaultValue;
+		return input === 'y' || input === 'yes';
+	}
+	return defaultValue;
 }
 
 async function generateSecret(): Promise<string> {
@@ -67,7 +65,7 @@ async function main() {
 		if (!overwrite) {
 			log('\n✅ Keeping existing .env file', colors.green);
 			log('Setup cancelled. Run this script again if you need to reconfigure.\n');
-			process.exit(0);
+			return;
 		}
 	}
 
@@ -162,13 +160,7 @@ BETTER_AUTH_SECRET="${secret}"
 	log(`  - ${colors.cyan}bun run lint${colors.reset} - Run ESLint\n`);
 
 	log('Happy coding! 🚀\n', colors.green);
-
-	process.exit(0);
 }
-
-// Enable stdin
-process.stdin.setRawMode(true);
-process.stdin.resume();
 
 main().catch((error) => {
 	log(`\n❌ Error: ${error.message}`, colors.red);
