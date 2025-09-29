@@ -17,7 +17,6 @@ function log(message: string, color = colors.reset) {
 	console.log(`${color}${message}${colors.reset}`);
 }
 
-
 function confirm(question: string, defaultValue = true): boolean {
 	const defaultText = defaultValue ? 'Y/n' : 'y/N';
 	const input = prompt(`${question} (${defaultText}):`) || '';
@@ -91,10 +90,7 @@ BETTER_AUTH_SECRET="${secret}"
 
 	// Ask if they want to start PostgreSQL via Docker
 	log('\n🐳 Database Setup\n', colors.bright);
-	const startDocker = confirm(
-		'Do you want to start PostgreSQL with Docker Compose?',
-		true
-	);
+	const startDocker = confirm('Do you want to start PostgreSQL with Docker Compose?', true);
 
 	if (startDocker) {
 		try {
@@ -136,9 +132,6 @@ BETTER_AUTH_SECRET="${secret}"
 
 	log('Next steps:', colors.bright);
 
-	// Get project name for the cd instruction
-	const projectName = process.cwd().split('/').pop() || 'my-app';
-
 	log(`  1. Navigate to your project: ${colors.cyan}cd ${projectName}${colors.reset}`);
 	log(`  2. Start the development server: ${colors.cyan}bun run dev${colors.reset}`);
 
@@ -147,7 +140,9 @@ BETTER_AUTH_SECRET="${secret}"
 	}
 
 	if (!runMigrations) {
-		log(`  ${!startDocker ? '4' : '3'}. Run migrations: ${colors.cyan}bun run db:setup${colors.reset}`);
+		log(
+			`  ${!startDocker ? '4' : '3'}. Run migrations: ${colors.cyan}bun run db:setup${colors.reset}`
+		);
 	}
 
 	log(`\n📚 Additional commands:`, colors.bright);
@@ -164,3 +159,4 @@ main().catch((error) => {
 	log(`\n❌ Error: ${error.message}`, colors.red);
 	process.exit(1);
 });
+
