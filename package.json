@@ -86,7 +86,6 @@
 	},
 	"bun-create": {
 		"postinstall": [
-			"echo 'POST INSTALL SCRIPT RAN'",
 			"bun run scripts/setup-project.ts"
 		],
 		"start": "bun run dev"

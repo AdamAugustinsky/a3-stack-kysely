@@ -18,18 +18,12 @@ function log(message: string, color = colors.reset) {
 }
 
 
-async function confirm(question: string, defaultValue = true): Promise<boolean> {
+function confirm(question: string, defaultValue = true): boolean {
 	const defaultText = defaultValue ? 'Y/n' : 'y/N';
-	console.write(
-		`${colors.blue}?${colors.reset} ${question} (${colors.cyan}${defaultText}${colors.reset}): `
-	);
+	const input = prompt(`${question} (${defaultText}):`) || '';
 
-	for await (const line of console) {
-		const input = line.trim().toLowerCase();
-		if (input === '') return defaultValue;
-		return input === 'y' || input === 'yes';
-	}
-	return defaultValue;
+	if (input.trim() === '') return defaultValue;
+	return input.trim().toLowerCase() === 'y' || input.trim().toLowerCase() === 'yes';
 }
 
 async function generateSecret(): Promise<string> {
@@ -69,7 +63,7 @@ async function main() {
 	// Check if .env already exists
 	if (existsSync('.env')) {
 		log('⚠️  .env file already exists!', colors.yellow);
-		const overwrite = await confirm('Do you want to overwrite it?', false);
+		const overwrite = confirm('Do you want to overwrite it?', false);
 		if (!overwrite) {
 			log('\n✅ Keeping existing .env file', colors.green);
 			log('Setup cancelled. Run this script again if you need to reconfigure.\n');
@@ -97,7 +91,7 @@ BETTER_AUTH_SECRET="${secret}"
 
 	// Ask if they want to start PostgreSQL via Docker
 	log('\n🐳 Database Setup\n', colors.bright);
-	const startDocker = await confirm(
+	const startDocker = confirm(
 		'Do you want to start PostgreSQL with Docker Compose?',
 		true
 	);
@@ -118,7 +112,7 @@ BETTER_AUTH_SECRET="${secret}"
 	}
 
 	// Ask if they want to run migrations
-	const runMigrations = await confirm('Do you want to run database migrations?', true);
+	const runMigrations = confirm('Do you want to run database migrations?', true);
 
 	if (runMigrations) {
 		try {
@@ -141,14 +135,19 @@ BETTER_AUTH_SECRET="${secret}"
 	log('='.repeat(60) + '\n', colors.bright);
 
 	log('Next steps:', colors.bright);
-	log(`  1. Start the development server: ${colors.cyan}bun run dev${colors.reset}`);
+
+	// Get project name for the cd instruction
+	const projectName = process.cwd().split('/').pop() || 'my-app';
+
+	log(`  1. Navigate to your project: ${colors.cyan}cd ${projectName}${colors.reset}`);
+	log(`  2. Start the development server: ${colors.cyan}bun run dev${colors.reset}`);
 
 	if (!startDocker) {
-		log(`  2. Start PostgreSQL: ${colors.cyan}bun run db:start${colors.reset}`);
+		log(`  3. Start PostgreSQL: ${colors.cyan}bun run db:start${colors.reset}`);
 	}
 
 	if (!runMigrations) {
-		log(`  3. Run migrations: ${colors.cyan}bun run db:setup${colors.reset}`);
+		log(`  ${!startDocker ? '4' : '3'}. Run migrations: ${colors.cyan}bun run db:setup${colors.reset}`);
 	}
 
 	log(`\n📚 Additional commands:`, colors.bright);

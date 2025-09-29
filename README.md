@@ -19,43 +19,43 @@ A modern full-stack web application template built with the **A3 Stack**: **Svel
 Create a new project using Bun:
 
 ```bash
-bun create github.com/AdamAugustinsky/a3-stack-kysely a3stackapp
-cd a3stackapp
+bun create github.com/AdamAugustinsky/a3-stack-kysely my-app
+cd my-app
 ```
 
-Then run the interactive setup script:
+The setup script will run automatically during project creation. If you need to run it again or it didn't run:
 
 ```bash
 bun run scripts/setup-project.ts
 ```
 
-This will guide you through:
+This interactive setup will:
 
-- Database configuration
-- Authentication setup
-- Environment file creation
-- Optional: Starting PostgreSQL with Docker
-- Optional: Running migrations and generating types
+- Generate a secure authentication secret
+- Create your `.env` file with default database configuration
+- Optionally start PostgreSQL with Docker Compose
+- Optionally run database migrations and generate TypeScript types
 
-### Manual Setup
-
-If you prefer to configure manually, copy `.env.example` to `.env` and update the values.
-
-To run the interactive setup again:
-
-```bash
-bun run scripts/setup-project.ts
-```
-
-## Development
-
-Start the development server:
+Once setup is complete, start the development server:
 
 ```bash
 bun run dev
 ```
 
 Visit [http://localhost:5173](http://localhost:5173) to see your app.
+
+### Manual Setup
+
+If you prefer to configure manually:
+
+1. Copy `.env.example` to `.env`
+2. Update the database connection string and generate a secret:
+   ```bash
+   openssl rand -base64 32
+   ```
+3. Start PostgreSQL: `bun run db:start`
+4. Run migrations: `bun run db:setup`
+5. Start dev server: `bun run dev`
 
 ## Available Commands
 
