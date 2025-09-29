@@ -36,5 +36,16 @@ export default ts.config(
 				svelteConfig
 			}
 		}
+	},
+	{
+		'svelte/no-navigation-without-base': [
+			'error',
+			{
+				ignoreGoto: false,
+				ignoreLinks: false,
+				ignorePushState: false,
+				ignoreReplaceState: false
+			}
+		]
 	}
 );
