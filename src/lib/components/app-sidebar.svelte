@@ -39,11 +39,16 @@
 
 	let { user, organizations: incomingOrganizations, ...restProps }: Props = $props();
 
-	// Normalize organizations from layout load (it may be an object with data or a plain array)
+	// Use Better Auth's client-side organization list hook for reactivity
+	const organizationsQuery = authClient.useListOrganizations();
+
+	// Fallback to server-loaded organizations if client query is still loading
 	const organizations = $derived(
-		Array.isArray(incomingOrganizations)
-			? incomingOrganizations
-			: (incomingOrganizations?.data ?? [])
+		$organizationsQuery.data?.length
+			? $organizationsQuery.data
+			: Array.isArray(incomingOrganizations)
+				? incomingOrganizations
+				: (incomingOrganizations?.data ?? [])
 	);
 
 	// Use Better Auth's client-side active organization hook
@@ -187,7 +192,11 @@
 			<div class="px-2 py-1.5 text-sm text-muted-foreground">No organizations yet</div>
 		{:else}
 			{#key organizations.length + '-' + ($activeOrganization.data?.id ?? 'none')}
-				<OrgSwitcher orgs={organizations} activeOrganization={$activeOrganization.data} />
+				<OrgSwitcher
+					orgs={organizations}
+					activeOrganization={$activeOrganization.data}
+					onOrganizationCreated={() => organizationsQuery.refetch()}
+				/>
 			{/key}
 		{/if}
 	</Sidebar.Header>
@@ -220,5 +229,16 @@
 	</Sidebar.Footer>
 </Sidebar.Root>
 
-<CreateOrganizationDialog bind:open={showCreateOrgDialog} />
-<CommandPalette bind:open={showCommandPalette} />
+<CreateOrganizationDialog
+	bind:open={showCreateOrgDialog}
+	onSuccess={() => {
+		// Refresh the organizations list after creating a new one
+		organizationsQuery.refetch();
+	}}
+/>
+<CommandPalette
+	bind:open={showCommandPalette}
+	{organizations}
+	activeOrganization={$activeOrganization.data}
+	isAuthenticated={true}
+/>

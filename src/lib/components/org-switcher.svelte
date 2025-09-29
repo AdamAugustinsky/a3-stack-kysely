@@ -20,9 +20,14 @@
 	import type { Subscription } from '@better-auth/stripe';
 	import { goto } from '$app/navigation';
 
-	let { orgs = [], activeOrganization = null } = $props<{
+	let {
+		orgs = [],
+		activeOrganization = null,
+		onOrganizationCreated
+	} = $props<{
 		orgs: Organization[];
 		activeOrganization: Organization | null;
+		onOrganizationCreated?: () => void;
 	}>();
 
 	// Fallback icons map by index to keep current UI vibe when no logo is set
@@ -153,4 +158,10 @@
 	</Sidebar.MenuItem>
 </Sidebar.Menu>
 
-<CreateOrganizationDialog bind:open={showCreateOrgDialog} />
+<CreateOrganizationDialog
+	bind:open={showCreateOrgDialog}
+	onSuccess={() => {
+		// Notify parent to refresh organization list
+		onOrganizationCreated?.();
+	}}
+/>

@@ -5,8 +5,10 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { authClient } from '$lib/auth-client';
 	import PlusIcon from '@lucide/svelte/icons/plus';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 
-	let { open = $bindable(false) }: { open?: boolean } = $props();
+	let { open = $bindable(false), onSuccess }: { open?: boolean; onSuccess?: () => void } = $props();
 
 	let errorValue = $state<string | undefined>();
 	let loading = $state(false);
@@ -15,11 +17,13 @@
 
 	// Auto-generate slug from name
 	$effect(() => {
-		if (nameValue && !slugValue) {
-			slugValue = nameValue
-				.toLowerCase()
-				.replace(/[^a-z0-9]+/g, '-')
-				.replace(/^-|-$/g, '');
+		const proposalSlug = nameValue
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-|-$/g, '');
+
+		if (nameValue && slugValue !== proposalSlug) {
+			slugValue = proposalSlug;
 		}
 	});
 
@@ -50,11 +54,29 @@
 				loading = true;
 
 				try {
-					await authClient.organization.create({
+					const result = await authClient.organization.create({
 						name: nameValue,
 						slug: slugValue
 					});
+
 					open = false;
+					// Call success callback to refresh organization list
+					onSuccess?.();
+
+					// Redirect to the newly created organization
+					if (result.data?.slug) {
+						// If we're already in an org route, replace the org slug
+						if (page.params.organization_slug) {
+							const newPath = page.url.pathname.replace(
+								page.params.organization_slug,
+								result.data.slug
+							);
+							goto(newPath, { replaceState: true });
+						} else {
+							// Otherwise navigate to the dashboard of the new org
+							goto(`/${result.data.slug}/dashboard`, { replaceState: true });
+						}
+					}
 				} catch (error) {
 					if (error instanceof Error) {
 						errorValue = error.message;
