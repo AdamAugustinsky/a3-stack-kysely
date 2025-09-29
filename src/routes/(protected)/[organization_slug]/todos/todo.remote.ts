@@ -118,7 +118,10 @@ const deleteTodoSchema = v.object({
 
 export const deleteTodo = command(deleteTodoSchema, async ({ organizationSlug, id }) => {
 	const headers = headersToRecord(getRequestEvent().request.headers);
-	const response = await eden.api.org({ organizationSlug }).todo({ id }).delete({ headers });
+	const response = await eden.api
+		.org({ organizationSlug })
+		.todo({ id })
+		.delete(undefined, { headers });
 
 	if (response.error) {
 		error(404, 'Todo not found');
