@@ -105,14 +105,14 @@ BETTER_AUTH_SECRET="${secret}"
 	if (startDocker) {
 		try {
 			log('\nStarting PostgreSQL container...', colors.cyan);
-			await $`docker compose up -d`;
+			await $`docker compose up -d`.quiet();
 			log('✅ PostgreSQL container started', colors.green);
 
 			// Wait a bit for PostgreSQL to be ready
 			log('⏳ Waiting for PostgreSQL to be ready...', colors.cyan);
 			await new Promise((resolve) => setTimeout(resolve, 3000));
 		} catch (error) {
-			log('⚠️  Failed to start Docker container', colors.yellow);
+			log('\n⚠️  Failed to start Docker container', colors.yellow);
 			log('You can start it manually later with: bun run db:start', colors.yellow);
 		}
 	}
@@ -123,14 +123,14 @@ BETTER_AUTH_SECRET="${secret}"
 	if (runMigrations) {
 		try {
 			log('\n📦 Running database migrations...', colors.cyan);
-			await $`bun run db:migrate`;
+			await $`bun run db:migrate`.quiet();
 			log('✅ Database migrations completed', colors.green);
 
 			log('\n🔧 Generating database types...', colors.cyan);
-			await $`bun run gentypes`;
+			await $`bun run gentypes`.quiet();
 			log('✅ Database types generated', colors.green);
 		} catch (error) {
-			log('⚠️  Failed to run migrations', colors.yellow);
+			log('\n⚠️  Failed to run migrations', colors.yellow);
 			log('You can run them manually later with: bun run db:setup', colors.yellow);
 		}
 	}
