@@ -151,43 +151,46 @@ const bulkUpdateTodosSchema = v.object({
 	})
 });
 
-export const bulkUpdateTodos = command(bulkUpdateTodosSchema, async ({ organizationSlug, ids, updates }) => {
-	if (ids.length === 0) {
-		error(400, 'No todo IDs provided');
+export const bulkUpdateTodos = command(
+	bulkUpdateTodosSchema,
+	async ({ organizationSlug, ids, updates }) => {
+		if (ids.length === 0) {
+			error(400, 'No todo IDs provided');
+		}
+
+		// Filter out undefined values from updates
+		const filteredUpdates = Object.fromEntries(
+			Object.entries(updates).filter(([, value]) => value !== undefined)
+		) as Partial<{
+			priority: Task['priority'];
+			status: Task['status'];
+			text: Task['text'];
+			label: Task['label'];
+			completed: boolean;
+		}>;
+
+		if (Object.keys(filteredUpdates).length === 0) {
+			error(400, 'No valid updates provided');
+		}
+
+		const headers = headersToRecord(getRequestEvent().request.headers);
+		const response = await eden.api.org({ organizationSlug }).todo.bulk.patch(
+			{
+				ids,
+				updates: filteredUpdates
+			},
+			{ headers }
+		);
+
+		if (response.error) {
+			error(404, 'No todos found with the provided IDs');
+		}
+
+		// Note: Query will be refreshed automatically when the component re-renders
+
+		return { success: true, updatedCount: ids.length };
 	}
-
-	// Filter out undefined values from updates
-	const filteredUpdates = Object.fromEntries(
-		Object.entries(updates).filter(([, value]) => value !== undefined)
-	) as Partial<{
-		priority: Task['priority'];
-		status: Task['status'];
-		text: Task['text'];
-		label: Task['label'];
-		completed: boolean;
-	}>;
-
-	if (Object.keys(filteredUpdates).length === 0) {
-		error(400, 'No valid updates provided');
-	}
-
-	const headers = headersToRecord(getRequestEvent().request.headers);
-	const response = await eden.api.org({ organizationSlug }).todo.bulk.patch(
-		{
-			ids,
-			updates: filteredUpdates
-		},
-		{ headers }
-	);
-
-	if (response.error) {
-		error(404, 'No todos found with the provided IDs');
-	}
-
-	// Note: Query will be refreshed automatically when the component re-renders
-
-	return { success: true, updatedCount: ids.length };
-});
+);
 
 // Bulk delete todos
 const bulkDeleteTodosSchema = v.object({
@@ -260,26 +263,29 @@ const updateTodoFormSchema = v.object({
 });
 
 // Update a single todo
-export const updateTodo = form(updateTodoFormSchema, async ({ organizationSlug, id, ...maybeUpdates }) => {
-	const headers = headersToRecord(getRequestEvent().request.headers);
-	const updates = Object.fromEntries(
-		Object.entries(maybeUpdates).filter(([, value]) => value !== undefined)
-	) as Partial<Pick<Task, 'text' | 'label' | 'status' | 'priority'>> & {
-		completed?: boolean;
-	};
+export const updateTodo = form(
+	updateTodoFormSchema,
+	async ({ organizationSlug, id, ...maybeUpdates }) => {
+		const headers = headersToRecord(getRequestEvent().request.headers);
+		const updates = Object.fromEntries(
+			Object.entries(maybeUpdates).filter(([, value]) => value !== undefined)
+		) as Partial<Pick<Task, 'text' | 'label' | 'status' | 'priority'>> & {
+			completed?: boolean;
+		};
 
-	if (Object.keys(updates).length === 0) {
-		error(400, 'No updates provided');
+		if (Object.keys(updates).length === 0) {
+			error(400, 'No updates provided');
+		}
+
+		const response = await eden.api
+			.org({ organizationSlug })
+			.todo({ id })
+			.patch(updates, { headers });
+
+		if (response.error) {
+			return error(404, { message: 'Todo not found' });
+		}
+
+		return { success: true };
 	}
-
-	const response = await eden.api
-		.org({ organizationSlug })
-		.todo({ id })
-		.patch(updates, { headers });
-
-	if (response.error) {
-		return error(404, { message: 'Todo not found' });
-	}
-
-	return { success: true };
-});
+);

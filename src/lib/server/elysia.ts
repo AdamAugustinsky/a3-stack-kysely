@@ -71,6 +71,13 @@ const bulkDeleteBody = v.object({
 	ids: v.array(v.number())
 });
 
+class UnauthorizedError extends Error {
+	status = 401;
+	constructor(public message: string) {
+		super(message);
+	}
+}
+
 export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAuth>) =>
 	new Elysia({ prefix: '/api' })
 		// Derive organization from session for all routes
@@ -83,16 +90,21 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 				.derive({ as: 'scoped' }, async ({ headers, params }) => {
 					const authHeaders = new Headers(headers as HeadersInit);
 
+					console.log({ authHeaders });
+
 					const { organizationSlug } = params;
 
-					const [organization] = await Promise.all([
-						auth.api.getFullOrganization({
-							headers: authHeaders,
-							query: { organizationSlug }
-						})
-					]);
+					const organization = await auth.api.getFullOrganization({
+						headers: authHeaders,
+						query: { organizationSlug }
+					});
 
-					if (!organization) throw new Error('Organization not found or access denied');
+					if (!organization) {
+						console.log({ error: 'Organization not found or access denied' });
+						throw new UnauthorizedError('Organization not found or access denied');
+					}
+
+					console.log({ organization });
 
 					return {
 						organizationId: organization.id,
@@ -137,7 +149,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 								console.log('Creating todo', body);
 								if (!organizationId) {
 									console.log('No organization selected');
-									throw new Error('No organization selected');
+									throw new UnauthorizedError('No organization selected');
 								}
 								return db
 									.insertInto('todo')
@@ -163,7 +175,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 							'/toggle',
 							async ({ body, organizationId }) => {
 								if (!organizationId) {
-									throw new Error('No organization selected');
+									throw new UnauthorizedError('No organization selected');
 								}
 								return db
 									.updateTable('todo')
@@ -185,7 +197,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 							'/:id',
 							async ({ params: { id }, body, organizationId }) => {
 								if (!organizationId) {
-									throw new Error('No organization selected');
+									throw new UnauthorizedError('No organization selected');
 								}
 								const updates: Record<string, unknown> = {};
 								if (body.text !== undefined) updates.text = body.text;
@@ -194,7 +206,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 								if (body.priority !== undefined) updates.priority = body.priority;
 								if (body.completed !== undefined) updates.completed = body.completed;
 								if (Object.keys(updates).length === 0) {
-									throw new Error('No updates provided');
+									throw new UnauthorizedError('No updates provided');
 								}
 								return db
 									.updateTable('todo')
@@ -214,7 +226,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 
 						.delete('/:id', async ({ params: { id }, organizationId }) => {
 							if (!organizationId) {
-								throw new Error('No organization selected');
+								throw new UnauthorizedError('No organization selected');
 							}
 							return db
 								.deleteFrom('todo')
@@ -228,7 +240,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 							'/bulk',
 							async ({ body, organizationId }) => {
 								if (!organizationId) {
-									throw new Error('No organization selected');
+									throw new UnauthorizedError('No organization selected');
 								}
 								const updates: Record<string, unknown> = {};
 								if (body.updates.label !== undefined) updates.label = body.updates.label;
@@ -237,7 +249,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 								if (body.updates.completed !== undefined)
 									updates.completed = body.updates.completed;
 								if (Object.keys(updates).length === 0) {
-									throw new Error('No updates provided');
+									throw new UnauthorizedError('No updates provided');
 								}
 								return db
 									.updateTable('todo')
@@ -259,7 +271,7 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 							'/bulk',
 							async ({ body, organizationId }) => {
 								if (!organizationId) {
-									throw new Error('No organization selected');
+									throw new UnauthorizedError('No organization selected');
 								}
 								return db
 									.deleteFrom('todo')
