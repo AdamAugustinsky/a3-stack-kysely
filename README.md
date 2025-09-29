@@ -1,38 +1,218 @@
-# sv
+# A3 Stack Template
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A modern full-stack web application template built with the **A3 Stack**: **SvelteKit 5**, **Better Auth**, and **Kysely** (PostgreSQL).
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+- 🚀 **SvelteKit 5** - Full-stack framework with experimental remote functions
+- 🔐 **Better Auth** - Modern authentication with organization/multi-tenant support
+- 🗄️ **Kysely** - Type-safe SQL query builder with PostgreSQL
+- 🎨 **shadcn/ui (Svelte)** - Beautiful UI component library
+- 🎯 **TailwindCSS v4** - Utility-first CSS framework
+- 📦 **Bun** - Fast all-in-one JavaScript runtime
+- 🐳 **Docker** - PostgreSQL container setup included
+- 🔄 **Atlas** - Database schema migrations
+- ✨ **TypeScript** - Full type safety from database to UI
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Quick Start
 
-# create a new project in my-app
-npx sv create my-app
+Create a new project using Bun:
+
+```bash
+bun create github.com/AdamAugustinsky/a3-stack-kysely a3stackapp
+cd a3stackapp
 ```
 
-## Developing
+The setup script will run automatically and guide you through:
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+- Database configuration
+- Authentication setup
+- Initial migration and type generation
 
-```sh
-npm run dev
+### Manual Setup
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+If you need to run the setup again:
+
+```bash
+bun run scripts/setup-project.ts
 ```
 
-## Building
+## Development
 
-To create a production version of your app:
+Start the development server:
 
-```sh
-npm run build
+```bash
+bun run dev
 ```
 
-You can preview the production build with `npm run preview`.
+Visit [http://localhost:5173](http://localhost:5173) to see your app.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Available Commands
+
+### Development
+
+- `bun run dev` - Start development server
+- `bun run build` - Production build
+- `bun run preview` - Preview production build
+- `bun run check` - Type checking
+- `bun run lint` - ESLint and Prettier checks
+- `bun run format` - Format code with Prettier
+
+### Database
+
+- `bun run db:start` - Start PostgreSQL container
+- `bun run db:migrate` - Apply Atlas migrations
+- `bun run db:migrate:status` - Check migration status
+- `bun run db:migrate:diff` - Generate new migration
+- `bun run gentypes` - Generate TypeScript types from database schema
+- `bun run db:setup` - Complete setup (migrate + generate types)
+- `bun run db:seed` - Seed database with sample data
+
+## Project Structure
+
+```
+.
+├── src/
+│   ├── lib/
+│   │   ├── components/     # Svelte components
+│   │   ├── server/         # Server-side code
+│   │   │   ├── db/         # Database connection and types
+│   │   │   └── auth.ts     # Better Auth configuration
+│   │   └── ...
+│   ├── routes/             # SvelteKit routes
+│   └── app.html            # HTML template
+├── migrations/             # Atlas database migrations
+├── scripts/                # Utility scripts
+├── static/                 # Static assets
+├── .env.example           # Environment variables template
+├── docker-compose.yml     # PostgreSQL setup
+└── package.json
+```
+
+## Remote Functions
+
+This template uses **SvelteKit Remote Functions** (experimental) for type-safe server-client communication. See [REMOTE_FUNCTIONS_DOCS.md](./REMOTE_FUNCTIONS_DOCS.md) for details.
+
+Example:
+
+```typescript
+// src/routes/todos/data.remote.ts
+import { query, form } from '$app/server';
+import * as v from 'valibot';
+
+export const getTodos = query(async () => {
+ return await db.selectFrom('todos').selectAll().execute();
+});
+
+export const createTodo = form(v.object({ title: v.string() }), async ({ title }) => {
+ await db.insertInto('todos').values({ title }).execute();
+});
+```
+
+```svelte
+<!-- src/routes/todos/+page.svelte -->
+<script>
+ import { getTodos, createTodo } from './data.remote';
+</script>
+
+<ul>
+ {#each await getTodos() as todo}
+  <li>{todo.title}</li>
+ {/each}
+</ul>
+
+<form {...createTodo}>
+ <input name="title" />
+ <button>Add</button>
+</form>
+```
+
+## Database Migrations
+
+Generate a new migration:
+
+```bash
+bun run db:migrate:diff
+```
+
+Apply migrations:
+
+```bash
+bun run db:migrate
+```
+
+After any schema changes, always regenerate types:
+
+```bash
+bun run gentypes
+```
+
+Or run both at once:
+
+```bash
+bun run db:setup
+```
+
+## Authentication
+
+Better Auth is pre-configured with:
+
+- Email/password authentication
+- Organization/multi-tenant support
+- Session management
+
+Configuration in `src/lib/server/auth.ts`.
+
+## Deployment
+
+This template uses [svelte-adapter-bun](https://github.com/gornostay25/svelte-adapter-bun) for deployment.
+
+Build for production:
+
+```bash
+bun run build
+```
+
+The built app will be in the `build/` directory, ready to deploy.
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```env
+DATABASE_URL="postgres://user:password@localhost:5432/database"
+BETTER_AUTH_SECRET="your-secret-key"
+```
+
+Generate a secret key:
+
+```bash
+openssl rand -base64 32
+```
+
+## Tech Stack
+
+- **Runtime**: Bun
+- **Framework**: SvelteKit 5
+- **Database**: PostgreSQL with Kysely
+- **Auth**: Better Auth
+- **UI**: shadcn/ui for Svelte + TailwindCSS v4
+- **Migrations**: Atlas
+- **Type Safety**: TypeScript + Valibot
+
+## License
+
+MIT
+
+## Learn More
+
+- [SvelteKit Documentation](https://kit.svelte.dev)
+- [Kysely Documentation](https://kysely.dev)
+- [Better Auth Documentation](https://www.better-auth.com)
+- [shadcn/ui Svelte](https://shadcn-svelte.com)
+- [Bun Documentation](https://bun.sh)
+
+---
+
+Happy coding! 🚀
+
