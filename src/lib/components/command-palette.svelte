@@ -4,29 +4,16 @@
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import {
-		LayoutDashboard,
-		User,
-		Building,
-		RefreshCw,
-		LogOut,
-		Keyboard,
-		Funnel,
-		CornerDownLeft,
-		ArrowLeft,
-		ArrowRight,
-		ShoppingCart,
-		TrendingUp,
-		GalleryVerticalEndIcon,
-		AudioWaveformIcon,
-		CommandIcon
-	} from '@lucide/svelte';
-
-	import ListDetailsIcon from '@tabler/icons-svelte/icons/list-details';
+	import { CornerDownLeft, ArrowLeft, ArrowRight } from '@lucide/svelte';
 	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
 	import Kbd from '$lib/components/kbd.svelte';
-	import { navigateToInActiveOrg, changeActiveOrg } from '@/client.utils.svelte';
-	import { SvelteDate } from 'svelte/reactivity';
+	import {
+		type CommandContext,
+		type CommandItem,
+		getVisibleCommands,
+		getCommandsByCategory,
+		getOrganizationSwitchCommands
+	} from '$lib/commands/index.js';
 
 	type Organization = {
 		id: string;
@@ -41,11 +28,13 @@
 	let {
 		open = $bindable(false),
 		organizations = [] as Organization[],
-		activeOrganization = null as ActiveOrganization
+		activeOrganization = null as ActiveOrganization,
+		isAuthenticated = true
 	} = $props<{
 		open?: boolean;
 		organizations?: Organization[];
 		activeOrganization?: ActiveOrganization;
+		isAuthenticated?: boolean;
 	}>();
 
 	let highlightedCommand = $state<CommandItem | null>(null);
@@ -60,131 +49,46 @@
 
 	let inputValue = $state('');
 
-	type CommandItem = {
-		id: string;
-		label: string;
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		icon: any;
-		shortcut?: string;
-		action: () => void | Promise<void>;
-		keywords?: string[];
-		type?: 'navigation' | 'customer' | 'action' | 'organization';
-		disabled?: boolean;
-		badge?: string;
-		closeOnExecute?: boolean;
-	};
-
 	// Detect if Mac for keyboard shortcuts
 	const isMac = useIsMac();
-	const fallbackOrgIcons = [GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon];
 
-	const navigationCommands: CommandItem[] = $derived([
-		{
-			id: 'nav-dashboard',
-			label: 'Dashboard',
-			icon: LayoutDashboard,
-			shortcut: isMac ? '⌘D' : 'Ctrl+D',
-			action: () => navigateToInActiveOrg('dashboard'),
-			keywords: ['home', 'overview', 'stats'],
-			type: 'navigation'
-		},
-		{
-			id: 'nav-customers',
-			label: "ToDo's",
-			icon: ListDetailsIcon,
-			shortcut: isMac ? '⌘C' : 'Ctrl+C',
-			action: () => navigateToInActiveOrg('/todos'),
-			keywords: ['users', 'clients', 'sales'],
-			type: 'navigation'
-		},
-		{
-			id: 'nav-account',
-			label: 'Account',
-			icon: User,
-			shortcut: isMac ? '⌘U' : 'Ctrl+U',
-			action: () => navigateToInActiveOrg('/account'),
-			keywords: ['profile', 'settings', 'user'],
-			type: 'navigation'
-		},
-		{
-			id: 'nav-organization',
-			label: 'Organization',
-			icon: Building,
-			action: () => navigateToInActiveOrg('/organization/settings'),
-			keywords: ['company', 'team'],
-			type: 'navigation'
-		}
-		// {
-		// 	id: 'nav-billing',
-		// 	label: 'Billing',
-		// 	icon: CreditCard,
-		// 	action: () => navigateTo('/organization/billing'),
-		// 	keywords: ['payment', 'subscription', 'invoice'],
-		// 	type: 'navigation'
-		// }
-	]);
+	// Create command context based on current state
+	const commandContext = $derived<CommandContext>({
+		pathname: page.url.pathname,
+		params: page.params as Record<string, string>,
+		searchParams: page.url.searchParams,
+		isAuthenticated,
+		activeOrganization,
+		organizations,
+		isMac
+	});
 
-	const quickActions: CommandItem[] = $derived([
-		{
-			id: 'action-change-organization',
-			label: 'Change Organization',
-			icon: Building,
-			action: () => {
-				paletteMode = 'change-org';
-				commandValue = '';
-				highlightedCommand = null;
-				inputValue = '';
-			},
-			keywords: ['switch', 'organization', 'team', 'workspace'],
-			type: 'action',
-			closeOnExecute: false
-		},
-		{
-			id: 'action-signout',
-			label: 'Sign Out',
-			icon: LogOut,
-			action: () => signOut(),
-			keywords: ['logout', 'exit'],
-			type: 'action'
-		},
-		{
-			id: 'action-refresh',
-			label: 'Refresh Data',
-			icon: RefreshCw,
-			shortcut: isMac ? '⌘R' : 'Ctrl+R',
-			action: () => refreshData(),
-			keywords: ['reload', 'update'],
-			type: 'action'
-		},
-		{
-			id: 'action-shortcuts',
-			label: 'Keyboard Shortcuts',
-			icon: Keyboard,
-			shortcut: '?',
-			action: () => showKeyboardShortcuts(),
-			keywords: ['help', 'hotkeys'],
-			type: 'action'
-		}
-	]);
+	// Get visible commands based on context
+	const visibleCommands = $derived(
+		paletteMode === 'change-org'
+			? getOrganizationSwitchCommands(commandContext)
+			: getVisibleCommands(commandContext)
+	);
 
-	const organizationCommands: CommandItem[] = $derived(
-		organizations.flatMap((org: Organization, index: number) => {
-			if (!org.slug) return [];
-			const isActive = activeOrganization?.id === org.id;
-			const Icon = fallbackOrgIcons[index % fallbackOrgIcons.length] ?? Building;
-			return [
-				{
-					id: `org-${org.id}`,
-					label: org.name,
-					icon: Icon,
-					action: () => changeActiveOrg(org.slug!),
-					keywords: [org.slug, org.name],
-					type: 'organization',
-					badge: isActive ? 'Active' : undefined,
-					disabled: isActive
-				}
-			];
-		})
+	// Group commands by category for display
+	const navigationCommands = $derived(
+		visibleCommands.filter(cmd => cmd.category === 'navigation')
+	);
+
+	const pageSpecificCommands = $derived(
+		visibleCommands.filter(cmd => cmd.category === 'page-specific')
+	);
+
+	const quickActions = $derived(
+		visibleCommands.filter(cmd => cmd.category === 'action' && cmd.id !== 'back-to-commands')
+	);
+
+	const organizationCommands = $derived(
+		visibleCommands.filter(cmd => cmd.category === 'organization')
+	);
+
+	const backCommand = $derived(
+		visibleCommands.find(cmd => cmd.id === 'back-to-commands')
 	);
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -222,9 +126,31 @@
 	}
 
 	async function executeCommand(commandId: string) {
-		const allCommands = [...organizationCommands, ...navigationCommands, ...quickActions];
-		const command = allCommands.find((cmd) => cmd.id === commandId);
+		const command = visibleCommands.find((cmd) => cmd.id === commandId);
 		if (command && !command.disabled) {
+			// Handle special commands
+			if (command.id === 'action-change-organization') {
+				paletteMode = 'change-org';
+				commandValue = '';
+				highlightedCommand = null;
+				inputValue = '';
+				return;
+			}
+
+			if (command.id === 'back-to-commands') {
+				paletteMode = 'default';
+				commandValue = '';
+				highlightedCommand = null;
+				inputValue = '';
+				return;
+			}
+
+			if (command.id === 'action-shortcuts') {
+				showKeyboardShortcuts();
+				open = false;
+				return;
+			}
+
 			await command.action();
 			const shouldClose = command.closeOnExecute ?? true;
 			if (shouldClose) {
@@ -239,112 +165,22 @@
 		}
 	}
 
-	function clearAllFilters() {
-		// Clear URL params for filters
-		const url = new URL(window.location.href);
-		url.searchParams.delete('filters');
-		window.history.replaceState({}, '', url);
-		window.location.reload();
-	}
-
-	function filterByHighCommission() {
-		// Add filter for commission > 100
-		const url = new URL(window.location.href);
-		const filterParam = JSON.stringify([
-			{
-				id: 'high-commission',
-				field: 'total_commission',
-				operator: 'greater_than',
-				value: 100,
-				type: 'number'
-			}
-		]);
-		url.searchParams.set('filters', filterParam);
-		window.location.href = url.toString();
-	}
-
-	function filterByMultipleOrders() {
-		// Add filter for order_count > 1
-		const url = new URL(window.location.href);
-		const filterParam = JSON.stringify([
-			{
-				id: 'multiple-orders',
-				field: 'order_count',
-				operator: 'greater_than',
-				value: 1,
-				type: 'number'
-			}
-		]);
-		url.searchParams.set('filters', filterParam);
-		window.location.href = url.toString();
-	}
-
-	function setDateRangeToday() {
-		const today = new Date().toISOString().split('T')[0];
-		const url = new URL(window.location.href);
-		url.searchParams.set('startDate', today);
-		url.searchParams.set('endDate', today);
-		window.location.href = url.toString();
-	}
-
-	function setDateRangeThisWeek() {
-		const today = new Date();
-		const startOfWeek = new SvelteDate(today);
-		startOfWeek.setDate(today.getDate() - today.getDay());
-		const endOfWeek = new SvelteDate(startOfWeek);
-		endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-		const url = new URL(window.location.href);
-		url.searchParams.set('startDate', startOfWeek.toISOString().split('T')[0]);
-		url.searchParams.set('endDate', endOfWeek.toISOString().split('T')[0]);
-		window.location.href = url.toString();
-	}
-
-	function setDateRangeThisMonth() {
-		const today = new Date();
-		const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-		const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-		const url = new URL(window.location.href);
-		url.searchParams.set('startDate', startOfMonth.toISOString().split('T')[0]);
-		url.searchParams.set('endDate', endOfMonth.toISOString().split('T')[0]);
-		window.location.href = url.toString();
-	}
-
-	async function signOut() {
-		try {
-			const response = await fetch('/api/auth/sign-out', { method: 'POST' });
-			if (response.ok) {
-				goto('/sign-in');
-			}
-		} catch (error) {
-			console.error('Failed to sign out:', error);
-		}
-	}
-
-	function refreshData() {
-		window.location.reload();
-	}
 
 	function showKeyboardShortcuts() {
 		const modKey = isMac ? '⌘' : 'Ctrl+';
-		alert(`Keyboard Shortcuts:
+		const shortcuts = visibleCommands
+			.filter(cmd => cmd.shortcut)
+			.map(cmd => `${cmd.shortcut} - ${cmd.label}`)
+			.join('\n');
 
-${modKey}K - Open Command Palette
+		const pageSpecificShortcuts = pageSpecificCommands.length > 0
+			? `\n\nOn this page:\n${pageSpecificCommands
+				.filter(cmd => cmd.shortcut)
+				.map(cmd => `${cmd.shortcut} - ${cmd.label}`)
+				.join('\n')}`
+			: '';
 
-On Customers page:
-C - Clear All Filters
-T - Set Date Range to Today
-R - Clear Filters (when not typing)
-
-When Command Palette is open:
-Ctrl+N - Navigate down
-Ctrl+P - Navigate up
-${modKey}D - Go to Dashboard
-${modKey}C - Go to Customers
-${modKey}U - Go to Account
-${modKey}R - Refresh Data
-? - Show this help`);
+		alert(`Keyboard Shortcuts:\n\n${modKey}K - Open Command Palette\n\nGeneral:\n${shortcuts}${pageSpecificShortcuts}\n\nWhen Command Palette is open:\nCtrl+N - Navigate down\nCtrl+P - Navigate up\n? - Show this help`);
 	}
 
 	// Filtering is handled internally by the Command component.
@@ -355,11 +191,11 @@ ${modKey}R - Refresh Data
 			return paletteMode === 'change-org' ? 'Select Organization' : '';
 		}
 
-		if (highlightedCommand.type === 'navigation') {
+		if (highlightedCommand.category === 'navigation') {
 			return 'Go to Page';
-		} else if (highlightedCommand.type === 'customer') {
+		} else if (highlightedCommand.category === 'page-specific') {
 			return 'Execute Action';
-		} else if (highlightedCommand.type === 'organization') {
+		} else if (highlightedCommand.category === 'organization') {
 			return highlightedCommand.disabled ? 'Current Organization' : 'Switch Organization';
 		} else {
 			return 'Run Command';
@@ -397,8 +233,6 @@ ${modKey}R - Refresh Data
 					No results found.
 				</Command.Empty>
 
-				{@const isOnCustomersPage = page.url.pathname.endsWith('/customers')}
-
 				{#if paletteMode === 'change-org'}
 					{#if organizationCommands.length > 0}
 						<Command.Group
@@ -425,24 +259,23 @@ ${modKey}R - Refresh Data
 						</Command.Group>
 					{/if}
 
-					<Command.Separator />
-					<Command.Group
-						heading="Actions"
-						class="!p-0 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
-					>
-						<Command.Item
-							value="Back to all commands"
-							onSelect={() => {
-								paletteMode = 'default';
-								commandValue = '';
-								highlightedCommand = null;
-							}}
-							class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
+					{#if backCommand}
+						<Command.Separator />
+						<Command.Group
+							heading="Actions"
+							class="!p-0 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
 						>
-							<ArrowLeft class="size-4 shrink-0" />
-							<span class="flex-1 truncate">Back to all commands</span>
-						</Command.Item>
-					</Command.Group>
+							<Command.Item
+								value={`${backCommand.label} ${(backCommand.keywords ?? []).join(' ')}`}
+								onSelect={() => void executeCommand(backCommand.id)}
+								class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
+							>
+								{@const Icon = backCommand.icon}
+								<Icon class="size-4 shrink-0" />
+								<span class="flex-1 truncate">{backCommand.label}</span>
+							</Command.Item>
+						</Command.Group>
+					{/if}
 				{:else}
 					{#if navigationCommands.length > 0}
 						<Command.Group
@@ -457,6 +290,34 @@ ${modKey}R - Refresh Data
 									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
 								>
 									<ArrowRight class="size-4 shrink-0" />
+									<span class="flex-1 truncate">{command.label}</span>
+									{#if command.badge}
+										<span class="ml-auto text-xs font-medium text-muted-foreground"
+											>{command.badge}</span
+										>
+									{:else if command.shortcut}
+										<Command.Shortcut>{command.shortcut}</Command.Shortcut>
+									{/if}
+								</Command.Item>
+							{/each}
+						</Command.Group>
+					{/if}
+
+					{#if pageSpecificCommands.length > 0}
+						<Command.Separator />
+						<Command.Group
+							heading="Page Actions"
+							class="!p-0 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
+						>
+							{#each pageSpecificCommands as command (command.id)}
+								<Command.Item
+									disabled={command.disabled}
+									value={`${command.label} ${(command.keywords ?? []).join(' ')}`}
+									onSelect={() => void executeCommand(command.id)}
+									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
+								>
+									{@const Icon = command.icon}
+									<Icon class="size-4 shrink-0" />
 									<span class="flex-1 truncate">{command.label}</span>
 									{#if command.badge}
 										<span class="ml-auto text-xs font-medium text-muted-foreground"
