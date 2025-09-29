@@ -8,7 +8,6 @@
 		LayoutDashboard,
 		User,
 		Building,
-		Users,
 		RefreshCw,
 		LogOut,
 		Keyboard,
@@ -22,6 +21,8 @@
 		AudioWaveformIcon,
 		CommandIcon
 	} from '@lucide/svelte';
+
+	import ListDetailsIcon from '@tabler/icons-svelte/icons/list-details';
 	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
 	import Kbd from '$lib/components/kbd.svelte';
 	import { navigateToInActiveOrg, changeActiveOrg } from '@/client.utils.svelte';
@@ -89,10 +90,10 @@
 		},
 		{
 			id: 'nav-customers',
-			label: 'Customers',
-			icon: Users,
+			label: "ToDo's",
+			icon: ListDetailsIcon,
 			shortcut: isMac ? '⌘C' : 'Ctrl+C',
-			action: () => navigateToInActiveOrg('/customers'),
+			action: () => navigateToInActiveOrg('/todos'),
 			keywords: ['users', 'clients', 'sales'],
 			type: 'navigation'
 		},
@@ -122,58 +123,6 @@
 		// 	type: 'navigation'
 		// }
 	]);
-
-	const customerCommands: CommandItem[] = [
-		{
-			id: 'customer-clear-filters',
-			label: 'Clear All Filters',
-			icon: Funnel,
-			shortcut: 'C',
-			action: () => clearAllFilters(),
-			keywords: ['reset', 'clear', 'remove'],
-			type: 'customer'
-		},
-		{
-			id: 'customer-filter-high-commission',
-			label: 'Filter: High Commission ($100+)',
-			icon: TrendingUp,
-			action: () => filterByHighCommission(),
-			keywords: ['revenue', 'vip', 'premium', 'money'],
-			type: 'customer'
-		},
-		{
-			id: 'customer-filter-multiple-orders',
-			label: 'Filter: Multiple Orders (2+)',
-			icon: ShoppingCart,
-			action: () => filterByMultipleOrders(),
-			keywords: ['repeat', 'loyal', 'frequent'],
-			type: 'customer'
-		},
-		{
-			id: 'customer-set-today',
-			label: 'Set Date Range: Today',
-			icon: Users,
-			action: () => setDateRangeToday(),
-			keywords: ['date', 'today', 'current'],
-			type: 'customer'
-		},
-		{
-			id: 'customer-set-week',
-			label: 'Set Date Range: This Week',
-			icon: Users,
-			action: () => setDateRangeThisWeek(),
-			keywords: ['date', 'week', 'weekly'],
-			type: 'customer'
-		},
-		{
-			id: 'customer-set-month',
-			label: 'Set Date Range: This Month',
-			icon: Users,
-			action: () => setDateRangeThisMonth(),
-			keywords: ['date', 'month', 'monthly'],
-			type: 'customer'
-		}
-	];
 
 	const quickActions: CommandItem[] = $derived([
 		{
@@ -273,12 +222,7 @@
 	}
 
 	async function executeCommand(commandId: string) {
-		const allCommands = [
-			...organizationCommands,
-			...navigationCommands,
-			...customerCommands,
-			...quickActions
-		];
+		const allCommands = [...organizationCommands, ...navigationCommands, ...quickActions];
 		const command = allCommands.find((cmd) => cmd.id === commandId);
 		if (command && !command.disabled) {
 			await command.action();
@@ -500,33 +444,6 @@ ${modKey}R - Refresh Data
 						</Command.Item>
 					</Command.Group>
 				{:else}
-					{#if isOnCustomersPage && customerCommands.length > 0}
-						<Command.Group
-							heading="Customer Actions"
-							class="!p-0 [&_[data-command-group-heading]]:scroll-mt-16 [&_[data-command-group-heading]]:!p-3 [&_[data-command-group-heading]]:!pb-1"
-						>
-							{#each customerCommands as command (command.id)}
-								<Command.Item
-									disabled={command.disabled}
-									value={`${command.label} ${(command.keywords ?? []).join(' ')}`}
-									onSelect={() => void executeCommand(command.id)}
-									class="relative flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
-								>
-									{@const Icon = command.icon}
-									<Icon class="size-4 shrink-0" />
-									<span class="flex-1 truncate">{command.label}</span>
-									{#if command.badge}
-										<span class="ml-auto text-xs font-medium text-muted-foreground"
-											>{command.badge}</span
-										>
-									{:else if command.shortcut}
-										<Command.Shortcut>{command.shortcut}</Command.Shortcut>
-									{/if}
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					{/if}
-
 					{#if navigationCommands.length > 0}
 						<Command.Group
 							heading="Navigation"

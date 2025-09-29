@@ -79,7 +79,7 @@
 				icon: DashboardIcon
 			},
 			{
-				title: 'Todos',
+				title: "ToDo's",
 				url: '/todos',
 				icon: ListDetailsIcon
 			},
