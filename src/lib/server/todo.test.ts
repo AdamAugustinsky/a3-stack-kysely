@@ -7,6 +7,7 @@ let eden: Awaited<ReturnType<typeof createElysiaEdenTestApp>>['eden'];
 let cleanup = () => {};
 let db: Kysely<DB>;
 let organizationId: string;
+let organizationSlug: string;
 
 beforeAll(async () => {
 	const testApp = await createElysiaEdenTestApp();
@@ -14,6 +15,7 @@ beforeAll(async () => {
 	cleanup = testApp.cleanup;
 	db = testApp.db;
 	organizationId = testApp.organizationId;
+	organizationSlug = testApp.organizationSlug;
 });
 
 afterAll(() => cleanup());
@@ -28,7 +30,7 @@ const createTestTodo = async (overrides = {}) => {
 		label: 'feature' as const
 	};
 
-	return await eden.api.todo.post({ ...defaultTodo, ...overrides });
+	return await eden.api.org({ organizationSlug }).todo.post({ ...defaultTodo, ...overrides });
 };
 
 const createMultipleTodos = async (count: number) => {
@@ -50,7 +52,7 @@ const clearTodos = async () => {
 
 describe('Todo CRUD Operations', () => {
 	test('GET /api/todo - returns empty array initially', async () => {
-		const response = await eden.api.todo.get({});
+		const response = await eden.api.org({ organizationSlug }).todo.get({});
 
 		expect(response.data).toBeInstanceOf(Array);
 		expect(response.data).toHaveLength(0);
@@ -80,7 +82,7 @@ describe('Todo CRUD Operations', () => {
 		const todoText = 'Todo with defaults';
 		await createTestTodo({ text: todoText });
 
-		const todos = await eden.api.todo.get({});
+		const todos = await eden.api.org({ organizationSlug }).todo.get({});
 		const createdTodo = todos.data?.find((todo) => todo.text === todoText);
 
 		expect(createdTodo?.completed).toBe(false);
@@ -93,7 +95,7 @@ describe('Todo CRUD Operations', () => {
 
 	test('PATCH /api/todo/:id - updates todo fields', async () => {
 		await createTestTodo({ text: 'Original todo' });
-		const todos = await eden.api.todo.get({});
+		const todos = await eden.api.org({ organizationSlug }).todo.get({});
 		const todo = todos.data?.find((t) => t.text === 'Original todo');
 
 		const updateData = {
@@ -103,10 +105,13 @@ describe('Todo CRUD Operations', () => {
 			priority: 'high' as const
 		};
 
-		const response = await eden.api.todo({ id: todo!.id }).patch(updateData);
+		const response = await eden.api
+			.org({ organizationSlug })
+			.todo({ id: todo!.id })
+			.patch(updateData);
 		expect(response.error).toBeNull();
 
-		const updatedTodos = await eden.api.todo.get({});
+		const updatedTodos = await eden.api.org({ organizationSlug }).todo.get({});
 		const updatedTodo = updatedTodos.data?.find((t) => t.id === todo!.id);
 
 		expect(updatedTodo?.text).toBe(updateData.text);
@@ -117,14 +122,17 @@ describe('Todo CRUD Operations', () => {
 
 	test('DELETE /api/todo/:id - removes todo', async () => {
 		await createTestTodo({ text: 'Todo to delete' });
-		const todos = await eden.api.todo.get({});
+		const todos = await eden.api.org({ organizationSlug }).todo.get({});
 		const todoToDelete = todos.data?.find((t) => t.text === 'Todo to delete');
 		const initialCount = todos.data?.length || 0;
 
-		const response = await eden.api.todo({ id: todoToDelete!.id }).delete();
+		const response = await eden.api
+			.org({ organizationSlug })
+			.todo({ id: todoToDelete!.id })
+			.delete();
 		expect(response.error).toBeNull();
 
-		const remainingTodos = await eden.api.todo.get({});
+		const remainingTodos = await eden.api.org({ organizationSlug }).todo.get({});
 		expect(remainingTodos.data?.length).toBe(initialCount - 1);
 		expect(remainingTodos.data?.find((t) => t.id === todoToDelete!.id)).toBeUndefined();
 	});
@@ -133,25 +141,25 @@ describe('Todo CRUD Operations', () => {
 describe('Todo Toggle Operation', () => {
 	test('PATCH /api/todo/toggle - toggles completion status', async () => {
 		await createTestTodo({ text: 'Toggle test', completed: false });
-		const todos = await eden.api.todo.get({});
+		const todos = await eden.api.org({ organizationSlug }).todo.get({});
 		const todo = todos.data?.find((t) => t.text === 'Toggle test');
 
 		expect(todo?.completed).toBe(false);
 
-		const toggleResponse = await eden.api.todo.toggle.patch({
+		const toggleResponse = await eden.api.org({ organizationSlug }).todo.toggle.patch({
 			id: todo!.id,
 			completed: true
 		});
 		expect(toggleResponse.error).toBeNull();
 
-		const updatedTodos = await eden.api.todo.get({});
+		const updatedTodos = await eden.api.org({ organizationSlug }).todo.get({});
 		const updatedTodo = updatedTodos.data?.find((t) => t.id === todo!.id);
 
 		expect(updatedTodo?.completed).toBe(true);
 	});
 
 	test('PATCH /api/todo/toggle - handles invalid id gracefully', async () => {
-		const response = await eden.api.todo.toggle.patch({
+		const response = await eden.api.org({ organizationSlug }).todo.toggle.patch({
 			id: 999999,
 			completed: true
 		});
@@ -163,10 +171,10 @@ describe('Todo Toggle Operation', () => {
 describe('Bulk Operations', () => {
 	test('PATCH /api/todo/bulk - updates multiple todos', async () => {
 		await createMultipleTodos(3);
-		const todos = await eden.api.todo.get({});
+		const todos = await eden.api.org({ organizationSlug }).todo.get({});
 		const todoIds = todos.data?.slice(0, 2).map((t) => t.id) || [];
 
-		const response = await eden.api.todo.bulk.patch({
+		const response = await eden.api.org({ organizationSlug }).todo.bulk.patch({
 			ids: todoIds,
 			updates: {
 				status: 'done' as const,
@@ -176,7 +184,7 @@ describe('Bulk Operations', () => {
 
 		expect(response.error).toBeNull();
 
-		const updatedTodos = await eden.api.todo.get({});
+		const updatedTodos = await eden.api.org({ organizationSlug }).todo.get({});
 		const updatedItems = updatedTodos.data?.filter((t) => todoIds.includes(t.id));
 
 		expect(updatedItems?.every((t) => t.status === 'done')).toBe(true);
@@ -185,14 +193,14 @@ describe('Bulk Operations', () => {
 
 	test('DELETE /api/todo/bulk - deletes multiple todos', async () => {
 		await createMultipleTodos(4);
-		const todos = await eden.api.todo.get({});
+		const todos = await eden.api.org({ organizationSlug }).todo.get({});
 		const todoIds = todos.data?.slice(0, 2).map((t) => t.id) || [];
 		const initialCount = todos.data?.length || 0;
 
-		const response = await eden.api.todo.bulk.delete({ ids: todoIds });
+		const response = await eden.api.org({ organizationSlug }).todo.bulk.delete({ ids: todoIds });
 		expect(response.error).toBeNull();
 
-		const remainingTodos = await eden.api.todo.get({});
+		const remainingTodos = await eden.api.org({ organizationSlug }).todo.get({});
 		expect(remainingTodos.data?.length).toBe(initialCount - 2);
 
 		const deletedItems = remainingTodos.data?.filter((t) => todoIds.includes(t.id));
@@ -220,7 +228,7 @@ describe('Dashboard Statistics', () => {
 			label: 'documentation'
 		});
 
-		const response = await eden.api.dashboard.stats.get();
+		const response = await eden.api.org({ organizationSlug }).dashboard.stats.get();
 
 		expect(response.error).toBeNull();
 		expect(response.data).toBeDefined();
@@ -255,7 +263,7 @@ describe('Dashboard Statistics', () => {
 	test('GET /api/dashboard/stats - handles empty state', async () => {
 		await clearTodos();
 
-		const response = await eden.api.dashboard.stats.get();
+		const response = await eden.api.org({ organizationSlug }).dashboard.stats.get();
 
 		expect(response.error).toBeNull();
 		expect(response.data).toBeDefined();
@@ -278,7 +286,7 @@ describe('Dashboard Activity', () => {
 		await createTestTodo({ text: 'Activity test 1' });
 		await createTestTodo({ text: 'Activity test 2', status: 'done' });
 
-		const response = await eden.api.dashboard.activity.get();
+		const response = await eden.api.org({ organizationSlug }).dashboard.activity.get();
 
 		expect(response.error).toBeNull();
 		expect(response.data).toBeDefined();
@@ -299,7 +307,7 @@ describe('Dashboard Activity', () => {
 	});
 
 	test('GET /api/dashboard/activity - returns sequential dates', async () => {
-		const response = await eden.api.dashboard.activity.get();
+		const response = await eden.api.org({ organizationSlug }).dashboard.activity.get();
 
 		expect(response.data?.length).toBe(30);
 
@@ -317,7 +325,7 @@ describe('Dashboard Activity', () => {
 
 describe('Error Handling', () => {
 	test('DELETE /api/todo/:id - handles non-existent id', async () => {
-		const response = await eden.api.todo({ id: 999999 }).delete();
+		const response = await eden.api.org({ organizationSlug }).todo({ id: 999999 }).delete();
 		expect(response.data).toBeEmpty();
 	});
 });

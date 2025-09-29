@@ -109,6 +109,7 @@ export const createElysiaEdenTestApp = async () => {
 		db,
 		auth,
 		testUser,
-		organizationId: orgResult.id
+		organizationId: orgResult.id,
+		organizationSlug: 'test-org'
 	};
 };

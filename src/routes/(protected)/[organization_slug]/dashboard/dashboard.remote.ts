@@ -5,8 +5,13 @@ import { error } from '@sveltejs/kit';
 
 // Dashboard statistics query
 export const getDashboardStats = query(async () => {
-	const headers = headersToRecord(getRequestEvent().request.headers);
-	const response = await eden.api.dashboard.stats.get({ headers });
+	const event = getRequestEvent();
+	const organizationSlug = event.params?.organization_slug;
+	if (!organizationSlug) {
+		error(400, 'Organization slug not found');
+	}
+	const headers = headersToRecord(event.request.headers);
+	const response = await eden.api.org({ organizationSlug }).dashboard.stats.get({ headers });
 
 	if (response.error) {
 		error(500, 'Failed to fetch dashboard stats');
@@ -17,8 +22,13 @@ export const getDashboardStats = query(async () => {
 
 // Recent todos activity (for charts)
 export const getRecentActivity = query(async () => {
-	const headers = headersToRecord(getRequestEvent().request.headers);
-	const response = await eden.api.dashboard.activity.get({ headers });
+	const event = getRequestEvent();
+	const organizationSlug = event.params?.organization_slug;
+	if (!organizationSlug) {
+		error(400, 'Organization slug not found');
+	}
+	const headers = headersToRecord(event.request.headers);
+	const response = await eden.api.org({ organizationSlug }).dashboard.activity.get({ headers });
 
 	if (response.error) {
 		error(500, 'Failed to fetch activity data');

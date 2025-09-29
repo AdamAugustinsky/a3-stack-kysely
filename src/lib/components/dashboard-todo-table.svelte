@@ -11,7 +11,10 @@
 	import { ExternalLinkIcon } from '@lucide/svelte';
 	import { page } from '$app/state';
 
-	const todosQuery = getTodos([]);
+	const todosQuery = getTodos({
+		organizationSlug: page.params.organization_slug!,
+		filters: []
+	});
 
 	function getStatusInfo(status: string) {
 		return statuses.find((s) => s.value === status) || statuses[0];

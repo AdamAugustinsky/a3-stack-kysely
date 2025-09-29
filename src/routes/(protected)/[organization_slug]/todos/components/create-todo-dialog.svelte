@@ -11,6 +11,7 @@
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { isValidationError, extractFieldErrors } from '$lib/utils/validation-errors.js';
 	import Input from '@/components/ui/input/input.svelte';
+	import { page } from '$app/state';
 
 	let {
 		open = $bindable()
@@ -68,6 +69,7 @@
 			})}
 			class="mt-6 space-y-6"
 		>
+			<input type="hidden" name="organizationSlug" value={page.params.organization_slug} />
 			{#if createTodoError}
 				<Alert.Root variant="destructive">
 					<CircleAlertIcon class="size-4" />

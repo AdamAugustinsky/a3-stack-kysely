@@ -33,7 +33,7 @@
 		const daysToShow = RANGE_TO_DAYS[timeRange];
 
 		// Normalize data defensively to avoid NaNs and ensure Date instances
-		return activityQuery.current.slice(-daysToShow).map((d) => ({
+		return activityQuery.current.slice(-daysToShow).map((d: any) => ({
 			date: d.date instanceof Date ? d.date : new Date(d.date),
 			completed: +d.completed || 0,
 			inProgress: +d.inProgress || 0,

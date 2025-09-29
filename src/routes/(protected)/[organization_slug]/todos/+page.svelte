@@ -10,6 +10,7 @@
 	import { getTodos, deleteTodo, bulkUpdateTodos, bulkDeleteTodos } from './todo.remote';
 	import { FilterStore } from '$lib/components/filter/filter-store.svelte';
 	import { todoFilterConfig } from './filter-config';
+	import { page } from '$app/state';
 
 	let editingTodo = $state<Task>();
 	let showEditDialog = $state(false);
@@ -22,7 +23,12 @@
 	const filterStore = new FilterStore();
 
 	// Make todos query reactive to filter changes
-	const todosQuery = $derived(getTodos(filterStore.toArray()));
+	const todosQuery = $derived(
+		getTodos({
+			organizationSlug: page.params.organization_slug!,
+			filters: filterStore.toArray()
+		})
+	);
 
 	function handleOpenCreateDialog() {
 		showCreateDialog = true;
@@ -30,7 +36,10 @@
 
 	async function handleDeleteTodo(id: number) {
 		try {
-			await deleteTodo({ id });
+			await deleteTodo({
+				organizationSlug: page.params.organization_slug!,
+				id
+			});
 		} catch (error) {
 			console.error('Failed to delete todo:', error);
 		}
@@ -60,6 +69,7 @@
 			try {
 				const ids = selectedTodos.map((todo) => todo.id);
 				await bulkUpdateTodos({
+					organizationSlug: page.params.organization_slug!,
 					ids,
 					updates: { status: status as 'backlog' | 'todo' | 'in progress' | 'done' | 'canceled' }
 				});
@@ -79,6 +89,7 @@
 			try {
 				const ids = selectedTodos.map((todo) => todo.id);
 				await bulkUpdateTodos({
+					organizationSlug: page.params.organization_slug!,
 					ids,
 					updates: { priority: priority as 'low' | 'medium' | 'high' }
 				});
@@ -98,6 +109,7 @@
 			try {
 				const ids = selectedTodos.map((todo) => todo.id);
 				await bulkUpdateTodos({
+					organizationSlug: page.params.organization_slug!,
 					ids,
 					updates: { label: label as 'bug' | 'feature' | 'documentation' }
 				});
@@ -116,7 +128,10 @@
 			isBulkOperationPending = true;
 			try {
 				const ids = selectedTodos.map((todo) => todo.id);
-				await bulkDeleteTodos({ ids });
+				await bulkDeleteTodos({
+					organizationSlug: page.params.organization_slug!,
+					ids
+				});
 				selectedTodos = [];
 				clearSelectionSignal++;
 			} catch (error) {

@@ -11,6 +11,7 @@
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import Label from '@/components/ui/label/label.svelte';
+	import { page } from '$app/state';
 
 	let {
 		open = $bindable(),
@@ -79,6 +80,7 @@
 				class="mt-6 space-y-6"
 			>
 				<input type="hidden" name="id" value={todo.id} />
+				<input type="hidden" name="organizationSlug" value={page.params.organization_slug} />
 
 				{#if updateTodoError}
 					<Alert.Root variant="destructive">

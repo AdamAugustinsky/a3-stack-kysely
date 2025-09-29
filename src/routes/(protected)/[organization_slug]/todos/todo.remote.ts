@@ -33,13 +33,16 @@ const toTask = (input: {
 	});
 };
 
-const getTodosSchema = v.optional(v.array(filterSchema));
+const getTodosSchema = v.object({
+	organizationSlug: v.string(),
+	filters: v.optional(v.array(filterSchema))
+});
 
-export const getTodos = query(getTodosSchema, async (filters) => {
+export const getTodos = query(getTodosSchema, async ({ organizationSlug, filters }) => {
 	const headers = headersToRecord(getRequestEvent().request.headers);
 	const queryParams = filters && filters.length > 0 ? { filters: JSON.stringify(filters) } : {};
 
-	const response = await eden.api.todo.get({
+	const response = await eden.api.org({ organizationSlug }).todo.get({
 		headers,
 		query: queryParams
 	});
@@ -54,6 +57,7 @@ export const getTodos = query(getTodosSchema, async (filters) => {
 
 // Form schema for create todo - handles form data string conversion
 const createTodoFormSchema = v.object({
+	organizationSlug: v.pipe(v.string(), v.nonEmpty('Organization slug is required')),
 	text: v.pipe(v.string(), v.nonEmpty('Task description is required')),
 	completed: v.optional(
 		v.pipe(
@@ -83,9 +87,10 @@ const createTodoFormSchema = v.object({
 
 export const createTodo = form(
 	createTodoFormSchema,
-	async ({ text, completed, priority, status, label }) => {
-		const headers = headersToRecord(getRequestEvent().request.headers);
-		const response = await eden.api.todo.post(
+	async ({ organizationSlug, text, completed, priority, status, label }) => {
+		const event = getRequestEvent();
+		const headers = headersToRecord(event.request.headers);
+		const response = await eden.api.org({ organizationSlug }).todo.post(
 			{
 				text,
 				completed,
@@ -107,12 +112,13 @@ export const createTodo = form(
 
 // Delete a single todo
 const deleteTodoSchema = v.object({
+	organizationSlug: v.string(),
 	id: v.number('ID must be a number')
 });
 
-export const deleteTodo = command(deleteTodoSchema, async ({ id }) => {
+export const deleteTodo = command(deleteTodoSchema, async ({ organizationSlug, id }) => {
 	const headers = headersToRecord(getRequestEvent().request.headers);
-	const response = await eden.api.todo({ id }).delete({ headers });
+	const response = await eden.api.org({ organizationSlug }).todo({ id }).delete({ headers });
 
 	if (response.error) {
 		error(404, 'Todo not found');
@@ -125,6 +131,7 @@ export const deleteTodo = command(deleteTodoSchema, async ({ id }) => {
 
 // Bulk update todos
 const bulkUpdateTodosSchema = v.object({
+	organizationSlug: v.string(),
 	ids: v.array(v.number('ID must be a number')),
 	updates: v.object({
 		status: v.optional(
@@ -144,7 +151,7 @@ const bulkUpdateTodosSchema = v.object({
 	})
 });
 
-export const bulkUpdateTodos = command(bulkUpdateTodosSchema, async ({ ids, updates }) => {
+export const bulkUpdateTodos = command(bulkUpdateTodosSchema, async ({ organizationSlug, ids, updates }) => {
 	if (ids.length === 0) {
 		error(400, 'No todo IDs provided');
 	}
@@ -165,7 +172,7 @@ export const bulkUpdateTodos = command(bulkUpdateTodosSchema, async ({ ids, upda
 	}
 
 	const headers = headersToRecord(getRequestEvent().request.headers);
-	const response = await eden.api.todo.bulk.patch(
+	const response = await eden.api.org({ organizationSlug }).todo.bulk.patch(
 		{
 			ids,
 			updates: filteredUpdates
@@ -184,16 +191,17 @@ export const bulkUpdateTodos = command(bulkUpdateTodosSchema, async ({ ids, upda
 
 // Bulk delete todos
 const bulkDeleteTodosSchema = v.object({
+	organizationSlug: v.string(),
 	ids: v.array(v.number('ID must be a number'))
 });
 
-export const bulkDeleteTodos = command(bulkDeleteTodosSchema, async ({ ids }) => {
+export const bulkDeleteTodos = command(bulkDeleteTodosSchema, async ({ organizationSlug, ids }) => {
 	if (ids.length === 0) {
 		error(400, 'No todo IDs provided');
 	}
 
 	const headers = headersToRecord(getRequestEvent().request.headers);
-	const response = await eden.api.todo.bulk.delete(
+	const response = await eden.api.org({ organizationSlug }).todo.bulk.delete(
 		{
 			ids
 		},
@@ -212,6 +220,7 @@ export const bulkDeleteTodos = command(bulkDeleteTodosSchema, async ({ ids }) =>
 // Update todo schema - for form submissions, we need to handle the ID transformation and string-to-boolean conversion
 
 const updateTodoFormSchema = v.object({
+	organizationSlug: v.pipe(v.string(), v.nonEmpty('Organization slug is required')),
 	id: v.pipe(
 		v.string(),
 		v.transform((val) => parseInt(val, 10)),
@@ -251,7 +260,7 @@ const updateTodoFormSchema = v.object({
 });
 
 // Update a single todo
-export const updateTodo = form(updateTodoFormSchema, async ({ id, ...maybeUpdates }) => {
+export const updateTodo = form(updateTodoFormSchema, async ({ organizationSlug, id, ...maybeUpdates }) => {
 	const headers = headersToRecord(getRequestEvent().request.headers);
 	const updates = Object.fromEntries(
 		Object.entries(maybeUpdates).filter(([, value]) => value !== undefined)
@@ -263,7 +272,10 @@ export const updateTodo = form(updateTodoFormSchema, async ({ id, ...maybeUpdate
 		error(400, 'No updates provided');
 	}
 
-	const response = await eden.api.todo({ id }).patch(updates, { headers });
+	const response = await eden.api
+		.org({ organizationSlug })
+		.todo({ id })
+		.patch(updates, { headers });
 
 	if (response.error) {
 		return error(404, { message: 'Todo not found' });
