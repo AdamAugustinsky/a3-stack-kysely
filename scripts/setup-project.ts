@@ -50,6 +50,26 @@ async function generateSecret(): Promise<string> {
 }
 
 async function main() {
+	// Check if stdin is interactive (TTY)
+	const isInteractive = process.stdin.isTTY;
+
+	if (!isInteractive) {
+		// Non-interactive mode: just show instructions
+		log('\n' + '='.repeat(60), colors.bright);
+		log('🚀 A3 Stack Template', colors.bright + colors.green);
+		log('='.repeat(60) + '\n', colors.bright);
+
+		log('📝 Setup Required\n', colors.yellow);
+		log('Before you can run the app, you need to configure your environment:\n');
+		log(`  ${colors.cyan}bun run scripts/setup-project.ts${colors.reset}\n`);
+		log('This will guide you through:');
+		log('  • Database configuration');
+		log('  • Authentication setup');
+		log('  • Environment file creation\n');
+		log('Or manually copy .env.example to .env and configure it.\n');
+		return;
+	}
+
 	log('\n' + '='.repeat(60), colors.bright);
 	log('🚀 Welcome to A3 Stack Setup', colors.bright + colors.green);
 	log('='.repeat(60) + '\n', colors.bright);

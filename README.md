@@ -23,15 +23,25 @@ bun create github.com/AdamAugustinsky/a3-stack-kysely a3stackapp
 cd a3stackapp
 ```
 
-The setup script will run automatically and guide you through:
+Then run the interactive setup script:
+
+```bash
+bun run scripts/setup-project.ts
+```
+
+This will guide you through:
 
 - Database configuration
 - Authentication setup
-- Initial migration and type generation
+- Environment file creation
+- Optional: Starting PostgreSQL with Docker
+- Optional: Running migrations and generating types
 
 ### Manual Setup
 
-If you need to run the setup again:
+If you prefer to configure manually, copy `.env.example` to `.env` and update the values.
+
+To run the interactive setup again:
 
 ```bash
 bun run scripts/setup-project.ts
