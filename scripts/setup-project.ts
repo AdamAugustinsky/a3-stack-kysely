@@ -17,17 +17,6 @@ function log(message: string, color = colors.reset) {
 	console.log(`${color}${message}${colors.reset}`);
 }
 
-async function prompt(question: string, defaultValue?: string): Promise<string> {
-	const defaultText = defaultValue ? ` (${colors.cyan}${defaultValue}${colors.reset})` : '';
-	console.write(`${colors.blue}?${colors.reset} ${question}${defaultText}: `);
-
-	// Read a line from stdin
-	for await (const line of console) {
-		const input = line.trim();
-		return input || defaultValue || '';
-	}
-	return defaultValue || '';
-}
 
 async function confirm(question: string, defaultValue = true): Promise<boolean> {
 	const defaultText = defaultValue ? 'Y/n' : 'y/N';
@@ -63,7 +52,6 @@ async function main() {
 		log('Before you can run the app, you need to configure your environment:\n');
 		log(`  ${colors.cyan}bun run scripts/setup-project.ts${colors.reset}\n`);
 		log('This will guide you through:');
-		log('  • Database configuration');
 		log('  • Authentication setup');
 		log('  • Environment file creation\n');
 		log('Or manually copy .env.example to .env and configure it.\n');
@@ -89,19 +77,10 @@ async function main() {
 		}
 	}
 
-	log('📝 Database Configuration\n', colors.bright);
+	// Use default database configuration
+	const databaseUrl = 'postgres://root:mysecretpassword@localhost:5432/local';
 
-	// Database configuration
-	const dbHost = await prompt('Database host', 'localhost');
-	const dbPort = await prompt('Database port', '5432');
-	const dbUser = await prompt('Database user', 'root');
-	const dbPassword = await prompt('Database password', 'mysecretpassword');
-	const dbName = await prompt('Database name', 'local');
-
-	// Construct DATABASE_URL
-	const databaseUrl = `postgres://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
-
-	log('\n🔐 Authentication Configuration\n', colors.bright);
+	log('🔐 Authentication Configuration\n', colors.bright);
 
 	// Generate BETTER_AUTH_SECRET
 	const secret = await generateSecret();
