@@ -38,7 +38,8 @@
 		try {
 			await deleteTodo({
 				organizationSlug: page.params.organization_slug!,
-				id
+				id,
+				filters: filterStore.toArray()
 			});
 		} catch (error) {
 			console.error('Failed to delete todo:', error);
@@ -130,7 +131,8 @@
 				const ids = selectedTodos.map((todo) => todo.id);
 				await bulkDeleteTodos({
 					organizationSlug: page.params.organization_slug!,
-					ids
+					ids,
+					filters: filterStore.toArray()
 				});
 				selectedTodos = [];
 				clearSelectionSignal++;

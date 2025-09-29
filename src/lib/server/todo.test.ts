@@ -326,6 +326,7 @@ describe('Dashboard Activity', () => {
 describe('Error Handling', () => {
 	test('DELETE /api/todo/:id - handles non-existent id', async () => {
 		const response = await eden.api.org({ organizationSlug }).todo({ id: 999999 }).delete();
-		expect(response.data).toBeEmpty();
+		expect(response.error?.status).toBe(404);
+		expect(response.data).toBeUndefined();
 	});
 });

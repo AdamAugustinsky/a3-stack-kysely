@@ -113,10 +113,11 @@ export const createTodo = form(
 // Delete a single todo
 const deleteTodoSchema = v.object({
 	organizationSlug: v.string(),
-	id: v.number('ID must be a number')
+	id: v.number('ID must be a number'),
+	filters: v.optional(v.array(filterSchema))
 });
 
-export const deleteTodo = command(deleteTodoSchema, async ({ organizationSlug, id }) => {
+export const deleteTodo = command(deleteTodoSchema, async ({ organizationSlug, id, filters }) => {
 	const headers = headersToRecord(getRequestEvent().request.headers);
 	const response = await eden.api
 		.org({ organizationSlug })
@@ -127,7 +128,12 @@ export const deleteTodo = command(deleteTodoSchema, async ({ organizationSlug, i
 		error(404, 'Todo not found');
 	}
 
-	// Note: Query will be refreshed automatically when the component re-renders
+	const refreshes = [getTodos({ organizationSlug }).refresh()];
+	if (filters !== undefined) {
+		refreshes.push(getTodos({ organizationSlug, filters }).refresh());
+	}
+
+	await Promise.all(refreshes);
 
 	return { success: true };
 });
@@ -198,30 +204,39 @@ export const bulkUpdateTodos = command(
 // Bulk delete todos
 const bulkDeleteTodosSchema = v.object({
 	organizationSlug: v.string(),
-	ids: v.array(v.number('ID must be a number'))
+	ids: v.array(v.number('ID must be a number')),
+	filters: v.optional(v.array(filterSchema))
 });
 
-export const bulkDeleteTodos = command(bulkDeleteTodosSchema, async ({ organizationSlug, ids }) => {
-	if (ids.length === 0) {
-		error(400, 'No todo IDs provided');
+export const bulkDeleteTodos = command(
+	bulkDeleteTodosSchema,
+	async ({ organizationSlug, ids, filters }) => {
+		if (ids.length === 0) {
+			error(400, 'No todo IDs provided');
+		}
+
+		const headers = headersToRecord(getRequestEvent().request.headers);
+		const response = await eden.api.org({ organizationSlug }).todo.bulk.delete(
+			{
+				ids
+			},
+			{ headers }
+		);
+
+		if (response.error) {
+			error(404, 'No todos found with the provided IDs');
+		}
+
+		const refreshes = [getTodos({ organizationSlug }).refresh()];
+		if (filters !== undefined) {
+			refreshes.push(getTodos({ organizationSlug, filters }).refresh());
+		}
+
+		await Promise.all(refreshes);
+
+		return { success: true, deletedCount: ids.length };
 	}
-
-	const headers = headersToRecord(getRequestEvent().request.headers);
-	const response = await eden.api.org({ organizationSlug }).todo.bulk.delete(
-		{
-			ids
-		},
-		{ headers }
-	);
-
-	if (response.error) {
-		error(404, 'No todos found with the provided IDs');
-	}
-
-	// Note: Query will be refreshed automatically when the component re-renders
-
-	return { success: true, deletedCount: ids.length };
-});
+);
 
 // Update todo schema - for form submissions, we need to handle the ID transformation and string-to-boolean conversion
 

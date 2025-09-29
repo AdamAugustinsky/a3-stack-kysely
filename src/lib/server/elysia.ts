@@ -78,6 +78,13 @@ class UnauthorizedError extends Error {
 	}
 }
 
+class NotFoundError extends Error {
+	status = 404;
+	constructor(public message: string) {
+		super(message);
+	}
+}
+
 export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAuth>) =>
 	new Elysia({ prefix: '/api' })
 		// Derive organization from session for all routes
@@ -228,12 +235,18 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 							if (!organizationId) {
 								throw new UnauthorizedError('No organization selected');
 							}
-							return db
+							const deleted = await db
 								.deleteFrom('todo')
 								.where('id', '=', Number(id))
 								.where('organization_id', '=', organizationId)
 								.returningAll()
 								.execute();
+
+							if (deleted.length === 0) {
+								throw new NotFoundError('Todo not found');
+							}
+
+							return deleted;
 						})
 
 						.patch(
@@ -273,12 +286,18 @@ export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAu
 								if (!organizationId) {
 									throw new UnauthorizedError('No organization selected');
 								}
-								return db
+								const deleted = await db
 									.deleteFrom('todo')
 									.where('id', 'in', body.ids)
 									.where('organization_id', '=', organizationId)
 									.returningAll()
 									.execute();
+
+								if (deleted.length === 0) {
+									throw new NotFoundError('No todos found with the provided IDs');
+								}
+
+								return deleted;
 							},
 							{
 								body: bulkDeleteBody
