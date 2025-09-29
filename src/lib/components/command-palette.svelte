@@ -72,24 +72,22 @@
 
 	// Group commands by category for display
 	const navigationCommands = $derived(
-		visibleCommands.filter(cmd => cmd.category === 'navigation')
+		visibleCommands.filter((cmd) => cmd.category === 'navigation')
 	);
 
 	const pageSpecificCommands = $derived(
-		visibleCommands.filter(cmd => cmd.category === 'page-specific')
+		visibleCommands.filter((cmd) => cmd.category === 'page-specific')
 	);
 
 	const quickActions = $derived(
-		visibleCommands.filter(cmd => cmd.category === 'action' && cmd.id !== 'back-to-commands')
+		visibleCommands.filter((cmd) => cmd.category === 'action' && cmd.id !== 'back-to-commands')
 	);
 
 	const organizationCommands = $derived(
-		visibleCommands.filter(cmd => cmd.category === 'organization')
+		visibleCommands.filter((cmd) => cmd.category === 'organization')
 	);
 
-	const backCommand = $derived(
-		visibleCommands.find(cmd => cmd.id === 'back-to-commands')
-	);
+	const backCommand = $derived(visibleCommands.find((cmd) => cmd.id === 'back-to-commands'));
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (open) {
@@ -147,6 +145,11 @@
 
 			if (command.id === 'action-shortcuts') {
 				showKeyboardShortcuts();
+				// Reset state before closing
+				commandValue = '';
+				inputValue = '';
+				paletteMode = 'default';
+				highlightedCommand = null;
 				open = false;
 				return;
 			}
@@ -154,33 +157,39 @@
 			await command.action();
 			const shouldClose = command.closeOnExecute ?? true;
 			if (shouldClose) {
+				// Reset all state when closing
 				commandValue = '';
+				inputValue = '';
 				paletteMode = 'default';
 				highlightedCommand = null;
 				open = false;
 			} else {
+				// Also reset search when staying open but executing a command
 				highlightedCommand = null;
 				commandValue = '';
+				inputValue = '';
 			}
 		}
 	}
 
-
 	function showKeyboardShortcuts() {
 		const modKey = isMac ? '⌘' : 'Ctrl+';
 		const shortcuts = visibleCommands
-			.filter(cmd => cmd.shortcut)
-			.map(cmd => `${cmd.shortcut} - ${cmd.label}`)
+			.filter((cmd) => cmd.shortcut)
+			.map((cmd) => `${cmd.shortcut} - ${cmd.label}`)
 			.join('\n');
 
-		const pageSpecificShortcuts = pageSpecificCommands.length > 0
-			? `\n\nOn this page:\n${pageSpecificCommands
-				.filter(cmd => cmd.shortcut)
-				.map(cmd => `${cmd.shortcut} - ${cmd.label}`)
-				.join('\n')}`
-			: '';
+		const pageSpecificShortcuts =
+			pageSpecificCommands.length > 0
+				? `\n\nOn this page:\n${pageSpecificCommands
+						.filter((cmd) => cmd.shortcut)
+						.map((cmd) => `${cmd.shortcut} - ${cmd.label}`)
+						.join('\n')}`
+				: '';
 
-		alert(`Keyboard Shortcuts:\n\n${modKey}K - Open Command Palette\n\nGeneral:\n${shortcuts}${pageSpecificShortcuts}\n\nWhen Command Palette is open:\nCtrl+N - Navigate down\nCtrl+P - Navigate up\n? - Show this help`);
+		alert(
+			`Keyboard Shortcuts:\n\n${modKey}K - Open Command Palette\n\nGeneral:\n${shortcuts}${pageSpecificShortcuts}\n\nWhen Command Palette is open:\nCtrl+N - Navigate down\nCtrl+P - Navigate up\n? - Show this help`
+		);
 	}
 
 	// Filtering is handled internally by the Command component.
@@ -202,13 +211,23 @@
 		}
 	});
 
-	// Reset highlighted command when dialog opens
+	// Reset all state when dialog opens or closes
 	$effect(() => {
 		if (open) {
+			// Reset when opening
 			highlightedCommand = null;
 			paletteMode = 'default';
 			commandValue = '';
 			inputValue = '';
+		} else {
+			// Also reset when closing to ensure clean state for next open
+			// Small delay to allow closing animation
+			setTimeout(() => {
+				highlightedCommand = null;
+				paletteMode = 'default';
+				commandValue = '';
+				inputValue = '';
+			}, 100);
 		}
 	});
 </script>

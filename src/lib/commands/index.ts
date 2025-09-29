@@ -70,10 +70,17 @@ export type CommandContext = {
 // Helper functions for common patterns
 function isOnRoute(pathname: string, route: string): boolean {
 	// Handle organization routes
-	if (route.includes('[organization_slug]') && pathname.includes('/organization/')) {
+	if (route.includes('[organization_slug]')) {
+		// Extract the route pattern after the organization slug
 		const routeWithoutOrg = route.replace('/[organization_slug]', '');
-		const pathWithoutOrg = pathname.replace(/\/organization\/[^/]+/, '');
-		return pathWithoutOrg === routeWithoutOrg;
+		// Check if the pathname matches the pattern: /any-org-slug/rest-of-path
+		// The org slug is always the first segment after the initial slash
+		const pathSegments = pathname.split('/').filter(Boolean);
+		if (pathSegments.length > 0) {
+			// Reconstruct path without the first segment (org slug)
+			const pathWithoutOrg = '/' + pathSegments.slice(1).join('/');
+			return pathWithoutOrg === routeWithoutOrg;
+		}
 	}
 	return pathname === route;
 }
@@ -247,6 +254,31 @@ export function getTodoPageCommands(context: CommandContext): CommandItem[] {
 	const isOnTodoPage = isOnRoute(context.pathname, '/[organization_slug]/todos');
 	if (!isOnTodoPage) return [];
 
+	// Helper function to create a filter and update URL
+	const applyFilter = (field: string, operator: string, value: any) => {
+		const filter = {
+			id: `filter-${Date.now()}`,
+			field,
+			operator,
+			value,
+			type: field === 'status' || field === 'priority' || field === 'label' ? 'select' : 'text'
+		};
+
+		const filters = [filter];
+		const serialized = JSON.stringify(filters);
+
+		const url = new URL(window.location.href);
+		url.searchParams.set('filters', serialized);
+		goto(url.toString());
+	};
+
+	// Helper to clear filters
+	const clearFilters = () => {
+		const url = new URL(window.location.href);
+		url.searchParams.delete('filters');
+		goto(url.toString());
+	};
+
 	return [
 		{
 			id: 'todo-create',
@@ -254,9 +286,13 @@ export function getTodoPageCommands(context: CommandContext): CommandItem[] {
 			icon: Plus,
 			shortcut: 'C',
 			action: () => {
-				// Trigger create todo modal
-				const event = new CustomEvent('command:createTodo');
-				window.dispatchEvent(event);
+				// Click the "Add Task" button to open the dialog
+				const addButton = document.querySelector(
+					'button:has(.lucide-circle-plus)'
+				) as HTMLButtonElement;
+				if (addButton) {
+					addButton.click();
+				}
 			},
 			keywords: ['new', 'add', 'create', 'todo', 'task'],
 			category: 'page-specific',
@@ -267,17 +303,30 @@ export function getTodoPageCommands(context: CommandContext): CommandItem[] {
 		},
 		{
 			id: 'todo-filter-active',
-			label: 'Show Active Todos',
+			label: 'Show Active Todos (Not Done)',
 			icon: ListCheck,
 			action: () => {
-				const url = new URL(window.location.href);
-				url.searchParams.set('status', 'active');
-				window.history.pushState({}, '', url);
-				window.dispatchEvent(new Event('popstate'));
+				// Apply filter for status != done
+				applyFilter('status', 'is_not', 'done');
 			},
-			keywords: ['filter', 'active', 'pending', 'incomplete'],
+			keywords: ['filter', 'active', 'pending', 'incomplete', 'todo', 'progress'],
 			category: 'page-specific',
 			priority: 2,
+			visibility: {
+				routes: ['/[organization_slug]/todos']
+			}
+		},
+		{
+			id: 'todo-filter-in-progress',
+			label: 'Show In Progress Todos',
+			icon: ListCheck,
+			action: () => {
+				// Apply filter for status = in progress
+				applyFilter('status', 'is', 'in progress');
+			},
+			keywords: ['filter', 'progress', 'working', 'current'],
+			category: 'page-specific',
+			priority: 3,
 			visibility: {
 				routes: ['/[organization_slug]/todos']
 			}
@@ -287,29 +336,10 @@ export function getTodoPageCommands(context: CommandContext): CommandItem[] {
 			label: 'Show Completed Todos',
 			icon: CheckSquare,
 			action: () => {
-				const url = new URL(window.location.href);
-				url.searchParams.set('status', 'completed');
-				window.history.pushState({}, '', url);
-				window.dispatchEvent(new Event('popstate'));
+				// Apply filter for status = done
+				applyFilter('status', 'is', 'done');
 			},
 			keywords: ['filter', 'completed', 'done', 'finished'],
-			category: 'page-specific',
-			priority: 3,
-			visibility: {
-				routes: ['/[organization_slug]/todos']
-			}
-		},
-		{
-			id: 'todo-filter-all',
-			label: 'Show All Todos',
-			icon: ListDetailsIcon,
-			action: () => {
-				const url = new URL(window.location.href);
-				url.searchParams.delete('status');
-				window.history.pushState({}, '', url);
-				window.dispatchEvent(new Event('popstate'));
-			},
-			keywords: ['filter', 'all', 'clear', 'reset'],
 			category: 'page-specific',
 			priority: 4,
 			visibility: {
@@ -317,14 +347,13 @@ export function getTodoPageCommands(context: CommandContext): CommandItem[] {
 			}
 		},
 		{
-			id: 'todo-clear-completed',
-			label: 'Clear Completed Todos',
-			icon: Archive,
+			id: 'todo-filter-all',
+			label: 'Show All Todos (Clear Filters)',
+			icon: ListDetailsIcon,
 			action: () => {
-				const event = new CustomEvent('command:clearCompleted');
-				window.dispatchEvent(event);
+				clearFilters();
 			},
-			keywords: ['clear', 'delete', 'remove', 'completed'],
+			keywords: ['filter', 'all', 'clear', 'reset', 'remove'],
 			category: 'page-specific',
 			priority: 5,
 			visibility: {
@@ -332,16 +361,14 @@ export function getTodoPageCommands(context: CommandContext): CommandItem[] {
 			}
 		},
 		{
-			id: 'todo-sort-date',
-			label: 'Sort by Date',
-			icon: Calendar,
+			id: 'todo-filter-high-priority',
+			label: 'Show High Priority Todos',
+			icon: TrendingUp,
 			action: () => {
-				const url = new URL(window.location.href);
-				url.searchParams.set('sort', 'date');
-				window.history.pushState({}, '', url);
-				window.dispatchEvent(new Event('popstate'));
+				// Apply filter for priority = high
+				applyFilter('priority', 'is', 'high');
 			},
-			keywords: ['sort', 'order', 'date', 'created'],
+			keywords: ['filter', 'high', 'priority', 'important', 'urgent'],
 			category: 'page-specific',
 			priority: 6,
 			visibility: {
@@ -349,16 +376,14 @@ export function getTodoPageCommands(context: CommandContext): CommandItem[] {
 			}
 		},
 		{
-			id: 'todo-sort-priority',
-			label: 'Sort by Priority',
-			icon: TrendingUp,
+			id: 'todo-filter-bugs',
+			label: 'Show Bugs',
+			icon: Archive,
 			action: () => {
-				const url = new URL(window.location.href);
-				url.searchParams.set('sort', 'priority');
-				window.history.pushState({}, '', url);
-				window.dispatchEvent(new Event('popstate'));
+				// Apply filter for label = bug
+				applyFilter('label', 'is', 'bug');
 			},
-			keywords: ['sort', 'order', 'priority', 'importance'],
+			keywords: ['filter', 'bug', 'issue', 'problem', 'defect'],
 			category: 'page-specific',
 			priority: 7,
 			visibility: {
@@ -366,16 +391,46 @@ export function getTodoPageCommands(context: CommandContext): CommandItem[] {
 			}
 		},
 		{
-			id: 'todo-export',
-			label: 'Export Todos',
-			icon: Download,
+			id: 'todo-filter-features',
+			label: 'Show Features',
+			icon: Plus,
 			action: () => {
-				const event = new CustomEvent('command:exportTodos');
-				window.dispatchEvent(event);
+				// Apply filter for label = feature
+				applyFilter('label', 'is', 'feature');
 			},
-			keywords: ['export', 'download', 'save', 'csv', 'json'],
+			keywords: ['filter', 'feature', 'new', 'enhancement'],
 			category: 'page-specific',
 			priority: 8,
+			visibility: {
+				routes: ['/[organization_slug]/todos']
+			}
+		},
+		{
+			id: 'todo-filter-today',
+			label: "Show Today's Todos",
+			icon: Calendar,
+			action: () => {
+				// Apply filter for created_at = today
+				applyFilter('created_at', 'is_today', null);
+			},
+			keywords: ['filter', 'today', 'date', 'current', 'now'],
+			category: 'page-specific',
+			priority: 9,
+			visibility: {
+				routes: ['/[organization_slug]/todos']
+			}
+		},
+		{
+			id: 'todo-filter-this-week',
+			label: "Show This Week's Todos",
+			icon: Calendar,
+			action: () => {
+				// Apply filter for created_at = this week
+				applyFilter('created_at', 'is_this_week', null);
+			},
+			keywords: ['filter', 'week', 'date', 'current'],
+			category: 'page-specific',
+			priority: 10,
 			visibility: {
 				routes: ['/[organization_slug]/todos']
 			}
@@ -605,4 +660,3 @@ export function getOrganizationSwitchCommands(context: CommandContext): CommandI
 		}
 	];
 }
-
