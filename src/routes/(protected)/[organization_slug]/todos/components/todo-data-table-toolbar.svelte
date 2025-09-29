@@ -3,12 +3,9 @@
 	import type { Table } from '@tanstack/table-core';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import TodoDataTableViewOptions from './todo-data-table-view-options.svelte';
-	import TodoDataTableFacetedFilter from './todo-data-table-faceted-filter.svelte';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { priorities, statuses, labels } from './data.js';
 	import { onMount } from 'svelte';
-	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
 	import Kbd from '$lib/components/kbd.svelte';
 	import type { FilterStore } from '$lib/components/filter/filter-store.svelte';
 	import type { FilterConfig } from '@/utils/filter';
@@ -31,9 +28,6 @@
 	const isFiltered = $derived(
 		table.getState().columnFilters.length > 0 || filterStore.hasAnyFilters
 	);
-	const statusCol = $derived(table.getColumn('status'));
-	const priorityCol = $derived(table.getColumn('priority'));
-	const labelCol = $derived(table.getColumn('label'));
 
 	// Check if we should show simple or advanced filters
 	const showAdvancedFilters = $derived(filterStore.currentMode === 'advanced');

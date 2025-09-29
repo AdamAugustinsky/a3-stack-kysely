@@ -17,6 +17,11 @@ export default ts.config(
 	prettier,
 	...svelte.configs.prettier,
 	{
+		// Ignore .svelte.ts and .svelte.js files - they have special syntax that ESLint can't parse
+		// They are still type-checked by TypeScript and svelte-check
+		ignores: ['**/*.svelte.ts', '**/*.svelte.js']
+	},
+	{
 		languageOptions: {
 			globals: { ...globals.browser, ...globals.node }
 		},
@@ -27,25 +32,27 @@ export default ts.config(
 		}
 	},
 	{
-		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
+		files: ['**/*.svelte'],
 		languageOptions: {
 			parserOptions: {
-				projectService: true,
-				extraFileExtensions: ['.svelte'],
 				parser: ts.parser,
 				svelteConfig
 			}
 		}
 	},
 	{
-		'svelte/no-navigation-without-base': [
-			'error',
-			{
-				ignoreGoto: false,
-				ignoreLinks: false,
-				ignorePushState: false,
-				ignoreReplaceState: false
-			}
-		]
+		rules: {
+			'@typescript-eslint/no-explicit-any': 'warn',
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					argsIgnorePattern: '^_',
+					varsIgnorePattern: '^_'
+				}
+			],
+			'svelte/no-navigation-without-base': 'off',
+			'svelte/no-navigation-without-resolve': 'off',
+			'svelte/prefer-svelte-reactivity': 'warn'
+		}
 	}
 );

@@ -41,7 +41,9 @@
 			await authClient.organization.create({ name: nameValue, slug: slugValue });
 			try {
 				await authClient.organization.setActive({ organizationSlug: slugValue });
-			} catch {}
+			} catch {
+				// Ignore setActive errors - organization was still created
+			}
 			goto(`/${slugValue}/dashboard`);
 		} catch (error) {
 			errorValue = error instanceof Error ? error.message : 'Failed to create organization';

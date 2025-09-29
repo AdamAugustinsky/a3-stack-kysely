@@ -30,10 +30,11 @@
 
 	const filteredData = $derived.by(() => {
 		if (activityQuery.loading || activityQuery.error || !activityQuery.current) return [];
+		if (!Array.isArray(activityQuery.current)) return [];
 		const daysToShow = RANGE_TO_DAYS[timeRange];
 
 		// Normalize data defensively to avoid NaNs and ensure Date instances
-		return activityQuery.current.slice(-daysToShow).map((d: any) => ({
+		return activityQuery.current.slice(-daysToShow).map((d) => ({
 			date: d.date instanceof Date ? d.date : new Date(d.date),
 			completed: +d.completed || 0,
 			inProgress: +d.inProgress || 0,

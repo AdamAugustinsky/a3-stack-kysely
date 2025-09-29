@@ -51,6 +51,10 @@ export const getTodos = query(getTodosSchema, async ({ organizationSlug, filters
 		console.error('Remote function - API error:', response.error);
 		error(500, 'Failed to fetch todos');
 	}
+	if (!Array.isArray(response.data)) {
+		console.error('Remote function - unexpected response format:', response.data);
+		error(500, 'Invalid response format');
+	}
 	console.log('Remote function - received', response.data.length, 'todos from API');
 	return response.data.map(toTask);
 });

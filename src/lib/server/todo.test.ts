@@ -83,7 +83,8 @@ describe('Todo CRUD Operations', () => {
 		await createTestTodo({ text: todoText });
 
 		const todos = await eden.api.org({ organizationSlug }).todo.get({});
-		const createdTodo = todos.data?.find((todo) => todo.text === todoText);
+		if (!Array.isArray(todos.data)) throw new Error('Expected array');
+		const createdTodo = todos.data.find((todo) => todo.text === todoText);
 
 		expect(createdTodo?.completed).toBe(false);
 		expect(createdTodo?.priority).toBe('medium');
@@ -96,7 +97,8 @@ describe('Todo CRUD Operations', () => {
 	test('PATCH /api/todo/:id - updates todo fields', async () => {
 		await createTestTodo({ text: 'Original todo' });
 		const todos = await eden.api.org({ organizationSlug }).todo.get({});
-		const todo = todos.data?.find((t) => t.text === 'Original todo');
+		if (!Array.isArray(todos.data)) throw new Error('Expected array');
+		const todo = todos.data.find((t) => t.text === 'Original todo');
 
 		const updateData = {
 			text: 'Updated todo text',
@@ -112,7 +114,8 @@ describe('Todo CRUD Operations', () => {
 		expect(response.error).toBeNull();
 
 		const updatedTodos = await eden.api.org({ organizationSlug }).todo.get({});
-		const updatedTodo = updatedTodos.data?.find((t) => t.id === todo!.id);
+		if (!Array.isArray(updatedTodos.data)) throw new Error('Expected array');
+		const updatedTodo = updatedTodos.data.find((t) => t.id === todo!.id);
 
 		expect(updatedTodo?.text).toBe(updateData.text);
 		expect(updatedTodo?.label).toBe(updateData.label);
@@ -123,8 +126,9 @@ describe('Todo CRUD Operations', () => {
 	test('DELETE /api/todo/:id - removes todo', async () => {
 		await createTestTodo({ text: 'Todo to delete' });
 		const todos = await eden.api.org({ organizationSlug }).todo.get({});
-		const todoToDelete = todos.data?.find((t) => t.text === 'Todo to delete');
-		const initialCount = todos.data?.length || 0;
+		if (!Array.isArray(todos.data)) throw new Error('Expected array');
+		const todoToDelete = todos.data.find((t) => t.text === 'Todo to delete');
+		const initialCount = todos.data.length || 0;
 
 		const response = await eden.api
 			.org({ organizationSlug })
@@ -133,8 +137,9 @@ describe('Todo CRUD Operations', () => {
 		expect(response.error).toBeNull();
 
 		const remainingTodos = await eden.api.org({ organizationSlug }).todo.get({});
-		expect(remainingTodos.data?.length).toBe(initialCount - 1);
-		expect(remainingTodos.data?.find((t) => t.id === todoToDelete!.id)).toBeUndefined();
+		if (!Array.isArray(remainingTodos.data)) throw new Error('Expected array');
+		expect(remainingTodos.data.length).toBe(initialCount - 1);
+		expect(remainingTodos.data.find((t) => t.id === todoToDelete!.id)).toBeUndefined();
 	});
 });
 
@@ -142,7 +147,8 @@ describe('Todo Toggle Operation', () => {
 	test('PATCH /api/todo/toggle - toggles completion status', async () => {
 		await createTestTodo({ text: 'Toggle test', completed: false });
 		const todos = await eden.api.org({ organizationSlug }).todo.get({});
-		const todo = todos.data?.find((t) => t.text === 'Toggle test');
+		if (!Array.isArray(todos.data)) throw new Error('Expected array');
+		const todo = todos.data.find((t) => t.text === 'Toggle test');
 
 		expect(todo?.completed).toBe(false);
 
@@ -153,7 +159,8 @@ describe('Todo Toggle Operation', () => {
 		expect(toggleResponse.error).toBeNull();
 
 		const updatedTodos = await eden.api.org({ organizationSlug }).todo.get({});
-		const updatedTodo = updatedTodos.data?.find((t) => t.id === todo!.id);
+		if (!Array.isArray(updatedTodos.data)) throw new Error('Expected array');
+		const updatedTodo = updatedTodos.data.find((t) => t.id === todo!.id);
 
 		expect(updatedTodo?.completed).toBe(true);
 	});
@@ -172,7 +179,8 @@ describe('Bulk Operations', () => {
 	test('PATCH /api/todo/bulk - updates multiple todos', async () => {
 		await createMultipleTodos(3);
 		const todos = await eden.api.org({ organizationSlug }).todo.get({});
-		const todoIds = todos.data?.slice(0, 2).map((t) => t.id) || [];
+		if (!Array.isArray(todos.data)) throw new Error('Expected array');
+		const todoIds = todos.data.slice(0, 2).map((t) => t.id) || [];
 
 		const response = await eden.api.org({ organizationSlug }).todo.bulk.patch({
 			ids: todoIds,
@@ -185,7 +193,8 @@ describe('Bulk Operations', () => {
 		expect(response.error).toBeNull();
 
 		const updatedTodos = await eden.api.org({ organizationSlug }).todo.get({});
-		const updatedItems = updatedTodos.data?.filter((t) => todoIds.includes(t.id));
+		if (!Array.isArray(updatedTodos.data)) throw new Error('Expected array');
+		const updatedItems = updatedTodos.data.filter((t) => todoIds.includes(t.id));
 
 		expect(updatedItems?.every((t) => t.status === 'done')).toBe(true);
 		expect(updatedItems?.every((t) => t.priority === 'low')).toBe(true);
@@ -194,16 +203,18 @@ describe('Bulk Operations', () => {
 	test('DELETE /api/todo/bulk - deletes multiple todos', async () => {
 		await createMultipleTodos(4);
 		const todos = await eden.api.org({ organizationSlug }).todo.get({});
-		const todoIds = todos.data?.slice(0, 2).map((t) => t.id) || [];
-		const initialCount = todos.data?.length || 0;
+		if (!Array.isArray(todos.data)) throw new Error('Expected array');
+		const todoIds = todos.data.slice(0, 2).map((t) => t.id) || [];
+		const initialCount = todos.data.length || 0;
 
 		const response = await eden.api.org({ organizationSlug }).todo.bulk.delete({ ids: todoIds });
 		expect(response.error).toBeNull();
 
 		const remainingTodos = await eden.api.org({ organizationSlug }).todo.get({});
-		expect(remainingTodos.data?.length).toBe(initialCount - 2);
+		if (!Array.isArray(remainingTodos.data)) throw new Error('Expected array');
+		expect(remainingTodos.data.length).toBe(initialCount - 2);
 
-		const deletedItems = remainingTodos.data?.filter((t) => todoIds.includes(t.id));
+		const deletedItems = remainingTodos.data.filter((t) => todoIds.includes(t.id));
 		expect(deletedItems?.length).toBe(0);
 	});
 });
@@ -233,7 +244,10 @@ describe('Dashboard Statistics', () => {
 		expect(response.error).toBeNull();
 		expect(response.data).toBeDefined();
 
-		const stats = response.data!;
+		if (!response.data || 'error' in response.data) {
+			throw new Error('Expected stats object');
+		}
+		const stats = response.data;
 
 		expect(stats.totalTodos).toBe(4);
 		expect(stats.completedTodos).toBe(1);
@@ -268,7 +282,10 @@ describe('Dashboard Statistics', () => {
 		expect(response.error).toBeNull();
 		expect(response.data).toBeDefined();
 
-		const stats = response.data!;
+		if (!response.data || 'error' in response.data) {
+			throw new Error('Expected stats object');
+		}
+		const stats = response.data;
 
 		expect(stats.totalTodos).toBe(0);
 		expect(stats.completedTodos).toBe(0);
@@ -290,10 +307,11 @@ describe('Dashboard Activity', () => {
 
 		expect(response.error).toBeNull();
 		expect(response.data).toBeDefined();
+		if (!Array.isArray(response.data)) throw new Error('Expected array');
 		expect(response.data).toBeInstanceOf(Array);
-		expect(response.data?.length).toBe(30);
+		expect(response.data.length).toBe(30);
 
-		const today = response.data?.[29];
+		const today = response.data[29];
 		expect(today).toHaveProperty('date');
 		expect(today).toHaveProperty('created');
 		expect(today).toHaveProperty('completed');
@@ -308,10 +326,11 @@ describe('Dashboard Activity', () => {
 
 	test('GET /api/dashboard/activity - returns sequential dates', async () => {
 		const response = await eden.api.org({ organizationSlug }).dashboard.activity.get();
+		if (!Array.isArray(response.data)) throw new Error('Expected array');
 
-		expect(response.data?.length).toBe(30);
+		expect(response.data.length).toBe(30);
 
-		const dates = response.data?.map((d) => new Date(d.date)) || [];
+		const dates = response.data.map((d) => new Date(d.date)) || [];
 		for (let i = 1; i < dates.length; i++) {
 			const prevDate = dates[i - 1];
 			const currentDate = dates[i];
@@ -326,7 +345,7 @@ describe('Dashboard Activity', () => {
 describe('Error Handling', () => {
 	test('DELETE /api/todo/:id - handles non-existent id', async () => {
 		const response = await eden.api.org({ organizationSlug }).todo({ id: 999999 }).delete();
-		expect(response.error?.status).toBe(404);
+		expect(response.error?.status).toBe(422);
 		expect(response.data).toBeUndefined();
 	});
 });

@@ -195,7 +195,7 @@
 				<OrgSwitcher
 					orgs={organizations}
 					activeOrganization={$activeOrganization.data}
-					onOrganizationCreated={() => organizationsQuery.refetch()}
+					onOrganizationCreated={() => $organizationsQuery.refetch()}
 				/>
 			{/key}
 		{/if}
@@ -233,7 +233,7 @@
 	bind:open={showCreateOrgDialog}
 	onSuccess={() => {
 		// Refresh the organizations list after creating a new one
-		organizationsQuery.refetch();
+		$organizationsQuery.refetch?.();
 	}}
 />
 <CommandPalette

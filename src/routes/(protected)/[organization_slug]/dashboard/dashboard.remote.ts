@@ -14,7 +14,7 @@ export const getDashboardStats = query(async () => {
 	const response = await eden.api.org({ organizationSlug }).dashboard.stats.get({ headers });
 
 	if (response.error) {
-		error(500, 'Failed to fetch dashboard stats');
+		error(response.status, JSON.stringify(response.error.value));
 	}
 
 	return response.data;
@@ -32,6 +32,9 @@ export const getRecentActivity = query(async () => {
 
 	if (response.error) {
 		error(500, 'Failed to fetch activity data');
+	}
+	if (!Array.isArray(response.data)) {
+		error(500, 'Invalid activity data format');
 	}
 
 	return response.data;

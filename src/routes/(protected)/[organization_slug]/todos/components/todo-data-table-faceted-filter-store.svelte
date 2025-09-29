@@ -8,11 +8,11 @@
 	import { cn } from '$lib/utils.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import type { FilterStore } from '$lib/components/filter/filter-store.svelte';
-	import { generateFilterId } from '@/utils/filter';
 
 	interface Option {
 		label: string;
 		value: string;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		icon?: any;
 	}
 
@@ -33,6 +33,7 @@
 		const fieldFilters = filterStore.filters.filter(
 			(f) => f.field === field && (f.operator === 'is' || f.operator === 'is_any_of')
 		);
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const values = new Set<string>();
 
 		for (const filter of fieldFilters) {
@@ -48,6 +49,7 @@
 
 	function toggleValue(value: string) {
 		// Get current values and toggle the clicked value
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const currentValues = new Set(selectedValues);
 		if (currentValues.has(value)) {
 			currentValues.delete(value);

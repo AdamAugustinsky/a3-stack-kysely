@@ -39,6 +39,7 @@ export type CommandVisibility = {
 export type CommandItem = {
 	id: string;
 	label: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	icon: any;
 	shortcut?: string;
 	action: () => void | Promise<void>;
@@ -255,6 +256,7 @@ export function getTodoPageCommands(context: CommandContext): CommandItem[] {
 	if (!isOnTodoPage) return [];
 
 	// Helper function to create a filter and update URL
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const applyFilter = (field: string, operator: string, value: any) => {
 		const filter = {
 			id: `filter-${Date.now()}`,

@@ -88,23 +88,15 @@ class NotFoundError extends Error {
 export const createElysiaApp = (db: Kysely<DB>, auth: ReturnType<typeof createAuth>) =>
 	new Elysia({ prefix: '/api' })
 		// Add error handler
-		.onError(({ error, set }) => {
-			console.error('Elysia error:', error);
-
-			// Handle custom errors
-			if (error instanceof UnauthorizedError) {
-				set.status = 401;
-				return { error: error.message };
+		.error({
+			UnauthorizedError,
+			NotFoundError
+		})
+		.onError(({ code, error, status }) => {
+			switch (code) {
+				case 'UnauthorizedError':
+					return status(401, error.message);
 			}
-
-			if (error instanceof NotFoundError) {
-				set.status = 404;
-				return { error: error.message };
-			}
-
-			// Default error handling
-			set.status = 500;
-			return { error: 'Internal server error' };
 		})
 		// Derive organization from session for all routes
 		.get('/', () => 'hi')

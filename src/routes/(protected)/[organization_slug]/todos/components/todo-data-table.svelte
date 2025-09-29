@@ -41,7 +41,6 @@
 	import { cn } from '$lib/utils.js';
 	import type { Task } from '@/schemas/todo';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
 	import type { FilterStore } from '$lib/components/filter/filter-store.svelte';
 	import type { FilterConfig } from '@/utils/filter';
 

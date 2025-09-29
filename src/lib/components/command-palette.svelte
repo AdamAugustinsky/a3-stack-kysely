@@ -1,17 +1,15 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { CornerDownLeft, ArrowLeft, ArrowRight } from '@lucide/svelte';
+	import { CornerDownLeft, ArrowRight } from '@lucide/svelte';
 	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
 	import Kbd from '$lib/components/kbd.svelte';
 	import {
 		type CommandContext,
 		type CommandItem,
 		getVisibleCommands,
-		getCommandsByCategory,
 		getOrganizationSwitchCommands
 	} from '$lib/commands/index.js';
 

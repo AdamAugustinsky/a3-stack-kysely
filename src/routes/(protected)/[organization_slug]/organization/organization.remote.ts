@@ -18,14 +18,6 @@ import { auth } from '$lib/server/auth';
 const stringId = v.pipe(v.string(), v.minLength(1));
 const slug = v.pipe(v.string(), v.minLength(1));
 
-// Create Organization (form)
-const createOrganizationSchema = v.object({
-	name: v.pipe(v.string(), v.minLength(1, 'Organization name is required')),
-	slug: v.pipe(v.string(), v.minLength(1)),
-	logo: v.optional(v.pipe(v.string(), v.minLength(1))),
-	keepCurrentActiveOrganization: v.optional(v.boolean())
-});
-
 // Update Organization (command)
 const updateOrganizationSchema = v.object({
 	organizationId: stringId,
