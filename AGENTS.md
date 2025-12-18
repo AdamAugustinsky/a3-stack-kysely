@@ -79,3 +79,4 @@ test("description", () => {
 - Add keyboard shortcuts for key actions (/, C, CMD+K).
 - Add commands for key actions or nice to have presets (for example in customers table it makes sense to have a command for filtering users by some obvious things, instead of having to use the mouse to click on the filter button and type what you want).
 - Give immediate visual feedback on user actions, keep the user hooked and aware of what is happening behind the scenes.
+- use the frontend-design skill every time building a new screen/page/component
