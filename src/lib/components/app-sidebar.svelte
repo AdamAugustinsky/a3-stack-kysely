@@ -18,11 +18,12 @@
 	import NavUser from './nav-user.svelte';
 	import OrgSwitcher from './org-switcher.svelte';
 	import CreateOrganizationDialog from './create-organization-dialog.svelte';
-	import { authClient } from '$lib/auth-client';
 	import CommandPalette from './command-palette.svelte';
 	import SearchIcon2 from '@lucide/svelte/icons/search';
 	import Kbd from '$lib/components/kbd.svelte';
 	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
+	import { page } from '$app/state';
+	import { invalidateAll } from '$app/navigation';
 
 	type Organization = {
 		id: string;
@@ -39,20 +40,17 @@
 
 	let { user, organizations: incomingOrganizations, ...restProps }: Props = $props();
 
-	// Use Better Auth's client-side organization list hook for reactivity
-	const organizationsQuery = authClient.useListOrganizations();
-
-	// Fallback to server-loaded organizations if client query is still loading
+	// Normalize organizations from props
 	const organizations = $derived(
-		$organizationsQuery.data?.length
-			? $organizationsQuery.data
-			: Array.isArray(incomingOrganizations)
-				? incomingOrganizations
-				: (incomingOrganizations?.data ?? [])
+		Array.isArray(incomingOrganizations)
+			? incomingOrganizations
+			: (incomingOrganizations?.data ?? [])
 	);
 
-	// Use Better Auth's client-side active organization hook
-	const activeOrganization = authClient.useActiveOrganization();
+	// Get active organization from URL slug
+	const activeOrganization = $derived(
+		organizations.find((org) => org.slug === page.params.organization_slug) ?? null
+	);
 
 	// Dialog state
 	let showCreateOrgDialog = $state(false);
@@ -191,11 +189,11 @@
 		{#if organizations.length === 0}
 			<div class="px-2 py-1.5 text-sm text-muted-foreground">No organizations yet</div>
 		{:else}
-			{#key organizations.length + '-' + ($activeOrganization.data?.id ?? 'none')}
+			{#key organizations.length + '-' + (activeOrganization?.id ?? 'none')}
 				<OrgSwitcher
 					orgs={organizations}
-					activeOrganization={$activeOrganization.data}
-					onOrganizationCreated={() => $organizationsQuery.refetch()}
+					{activeOrganization}
+					onOrganizationCreated={() => invalidateAll()}
 				/>
 			{/key}
 		{/if}
@@ -233,12 +231,12 @@
 	bind:open={showCreateOrgDialog}
 	onSuccess={() => {
 		// Refresh the organizations list after creating a new one
-		$organizationsQuery.refetch?.();
+		invalidateAll();
 	}}
 />
 <CommandPalette
 	bind:open={showCommandPalette}
 	{organizations}
-	activeOrganization={$activeOrganization.data}
+	{activeOrganization}
 	isAuthenticated={true}
 />

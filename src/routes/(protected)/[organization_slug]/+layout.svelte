@@ -5,7 +5,7 @@
 	import type { LayoutData } from './$types';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import { authClient } from '@/auth-client';
+	import { setActiveOrganization } from '../../auth.remote';
 
 	const { children, data }: { children: Snippet; data: LayoutData } = $props();
 
@@ -13,9 +13,11 @@
 		const organization = data.organizations.find(
 			(org) => org.slug === page.params.organization_slug
 		);
-		authClient.organization.setActive({
-			organizationId: organization.id
-		});
+		if (organization) {
+			setActiveOrganization({
+				organizationId: organization.id
+			});
+		}
 	});
 </script>
 

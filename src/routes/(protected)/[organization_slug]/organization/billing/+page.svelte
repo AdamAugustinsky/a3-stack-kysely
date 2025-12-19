@@ -3,7 +3,6 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Alert from '$lib/components/ui/alert';
 	import { Badge } from '$lib/components/ui/badge';
-	import { authClient } from '$lib/auth-client';
 	import CheckIcon from '@tabler/icons-svelte/icons/check';
 	import InfoCircleIcon from '@tabler/icons-svelte/icons/info-circle';
 	import CreditCardIcon from '@tabler/icons-svelte/icons/credit-card';
@@ -12,16 +11,22 @@
 	import DatabaseIcon from '@tabler/icons-svelte/icons/database';
 	import BuildingIcon from '@tabler/icons-svelte/icons/building';
 	import { page } from '$app/state';
+	import {
+		listSubscriptions,
+		upgradeSubscription,
+		manageSubscription
+	} from '../../../../auth.remote';
+	import type { PageData } from './$types';
 
-	import type { Subscription } from '@better-auth/stripe';
+	let { data }: { data: PageData } = $props();
 
-	let subscription = $state<Subscription | null>(null);
+	let subscription = $state<Awaited<ReturnType<typeof listSubscriptions>>[number] | null>(null);
 	let loading = $state(true);
 	let upgrading = $state(false);
 	let errorMessage = $state<string | null>(null);
 
-	// Use Better Auth's client-side active organization hook
-	const activeOrganization = authClient.useActiveOrganization();
+	// Use page data for active organization
+	const activeOrganization = $derived(data.activeOrganization);
 
 	const plans = [
 		{
@@ -103,31 +108,22 @@
 	let billingPeriod = $state<'monthly' | 'annual'>('monthly');
 
 	async function loadData() {
-		const activeOrg = $activeOrganization.data;
-		if (!activeOrg) return;
+		if (!activeOrganization) return;
 
 		try {
 			loading = true;
 			errorMessage = null;
 
 			// Get subscription for the organization
-			const { data: subscriptions, error } = await authClient.subscription.list({
-				query: {
-					referenceId: activeOrg.id
-				}
+			const subscriptions = await listSubscriptions({
+				referenceId: activeOrganization.id
 			});
-
-			if (error) {
-				console.error('Failed to fetch subscriptions:', error);
-				errorMessage = 'Failed to load subscription information';
-				return;
-			}
 
 			// Find active or trialing subscription
 			subscription =
-				subscriptions?.find((sub) => sub.status === 'active' || sub.status === 'trialing') || null;
-		} catch (error) {
-			console.error('Failed to load billing data:', error);
+				subscriptions?.find((sub) => sub.status === 'active' || sub.status === 'trialing') ?? null;
+		} catch (err) {
+			console.error('Failed to load billing data:', err);
 			errorMessage = 'Failed to load billing information';
 		} finally {
 			loading = false;
@@ -135,8 +131,7 @@
 	}
 
 	async function handleUpgrade(planName: string) {
-		const activeOrg = $activeOrganization.data;
-		if (!activeOrg) return;
+		if (!activeOrganization) return;
 
 		try {
 			upgrading = true;
@@ -147,23 +142,21 @@
 			const successUrl = `${window.location.origin}/${orgSlug}/organization/billing?upgraded=true`;
 			const cancelUrl = `${window.location.origin}/${orgSlug}/organization/billing`;
 
-			const { error } = await authClient.subscription.upgrade({
+			// Note: This will throw an error since Stripe plugin is not configured
+			await upgradeSubscription({
 				plan: planName,
-				referenceId: activeOrg.id,
+				referenceId: activeOrganization.id,
 				successUrl,
 				cancelUrl,
-				annual: isAnnual,
-				subscriptionId: subscription?.stripeSubscriptionId || undefined
+				annual: isAnnual
 			});
-
-			if (error) {
-				console.error('Upgrade failed:', error);
-				if (error.message?.includes('portal configuration')) {
-					errorMessage =
-						'Stripe Customer Portal is not properly configured. Please contact support.';
-				} else {
-					errorMessage = error.message || 'Failed to start upgrade process';
-				}
+		} catch (err) {
+			console.error('Upgrade failed:', err);
+			if (err instanceof Error && err.message?.includes('portal configuration')) {
+				errorMessage =
+					'Stripe Customer Portal is not properly configured. Please contact support.';
+			} else {
+				errorMessage = err instanceof Error ? err.message : 'Failed to start upgrade process';
 			}
 		} finally {
 			upgrading = false;
@@ -171,8 +164,7 @@
 	}
 
 	async function handleManageBilling() {
-		const activeOrg = $activeOrganization.data;
-		if (!activeOrg) return;
+		if (!activeOrganization) return;
 
 		// Check if there's an active subscription
 		if (!subscription || !subscription.stripeCustomerId) {
@@ -181,30 +173,28 @@
 		}
 
 		try {
-			// Use Better Auth's subscription.cancel method which opens the billing portal
-			const { error } = await authClient.subscription.cancel({
-				referenceId: activeOrg.id,
-				subscriptionId: subscription.stripeSubscriptionId,
+			// Note: This will throw an error since Stripe plugin is not configured
+			await manageSubscription({
+				referenceId: activeOrganization.id,
 				returnUrl: `${window.location.origin}/${page.params.organization_slug}/organization/billing`
 			});
-
-			if (error) {
-				console.error('Failed to open billing portal:', error);
-				if (error.message?.includes('portal configuration')) {
+		} catch (err) {
+			console.error('Failed to open billing portal:', err);
+			if (err instanceof Error) {
+				if (err.message?.includes('portal configuration')) {
 					errorMessage =
 						'Stripe Customer Portal configuration is incomplete. Please contact support to enable billing management features.';
 				} else if (
-					error.message?.includes('No customer found') ||
-					error.message?.includes('not found')
+					err.message?.includes('No customer found') ||
+					err.message?.includes('not found')
 				) {
 					errorMessage = 'No billing information found. Please upgrade to a paid plan first.';
 				} else {
-					errorMessage = error.message || 'Failed to open billing portal';
+					errorMessage = err.message || 'Failed to open billing portal';
 				}
+			} else {
+				errorMessage = 'Failed to open billing portal';
 			}
-		} catch (error) {
-			console.error('Failed to open billing portal:', error);
-			errorMessage = 'Failed to open billing portal';
 		}
 	}
 
@@ -217,7 +207,7 @@
 		}
 
 		// Only load data if we have an active organization
-		if ($activeOrganization.data) {
+		if (activeOrganization) {
 			loadData();
 		}
 	});
@@ -273,7 +263,7 @@
 				{/if}
 			</Alert.Description>
 		</Alert.Root>
-	{:else if $activeOrganization.data}
+	{:else if activeOrganization}
 		<!-- Current Plan Overview -->
 		<Card.Root class="mb-8">
 			<Card.Header>
@@ -281,7 +271,7 @@
 					<div>
 						<Card.Title class="flex items-center gap-2">
 							<BuildingIcon class="h-5 w-5" />
-							{$activeOrganization.data.name}
+							{activeOrganization.name}
 						</Card.Title>
 						<Card.Description>Current subscription status</Card.Description>
 					</div>

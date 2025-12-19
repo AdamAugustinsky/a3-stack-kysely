@@ -5,8 +5,10 @@
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import CreateOrganizationDialog from './create-organization-dialog.svelte';
-	import { authClient } from '$lib/auth-client';
 	import { page } from '$app/state';
+	import { listSubscriptions } from '../../routes/auth.remote';
+	import { GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon } from '@lucide/svelte';
+	import { goto } from '$app/navigation';
 
 	type Organization = {
 		id: string;
@@ -15,10 +17,6 @@
 		logo?: string | null;
 		metadata?: Record<string, unknown> | null;
 	};
-
-	import { GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon } from '@lucide/svelte';
-	import type { Subscription } from '@better-auth/stripe';
-	import { goto } from '$app/navigation';
 
 	let {
 		orgs = [],
@@ -33,8 +31,8 @@
 	// Fallback icons map by index to keep current UI vibe when no logo is set
 	const fallbackLogos = [GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon];
 
-	// Track subscriptions for organizations
-	let subscriptions = $state<Record<string, Subscription>>({});
+	// Track subscriptions for organizations - type inferred from listSubscriptions
+	let subscriptions = $state<Record<string, Awaited<ReturnType<typeof listSubscriptions>>[number]>>({});
 	let loadingSubscriptions = $state(false);
 
 	async function loadSubscriptions() {
@@ -43,18 +41,16 @@
 		loadingSubscriptions = true;
 		try {
 			for (const org of orgs) {
-				const subs = await authClient.subscription.list({
-					query: { referenceId: org.id }
-				});
-				const activeSub = subs.data?.find(
+				const subs = await listSubscriptions({ referenceId: org.id });
+				const activeSub = subs?.find(
 					(sub) => sub.status === 'active' || sub.status === 'trialing'
 				);
 				if (activeSub) {
 					subscriptions[org.id] = activeSub;
 				}
 			}
-		} catch (error) {
-			console.error('Failed to load subscriptions:', error);
+		} catch (err) {
+			console.error('Failed to load subscriptions:', err);
 		} finally {
 			loadingSubscriptions = false;
 		}

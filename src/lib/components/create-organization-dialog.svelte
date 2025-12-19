@@ -3,7 +3,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { authClient } from '$lib/auth-client';
+	import { createOrganization } from '../../routes/auth.remote';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -54,7 +54,7 @@
 				loading = true;
 
 				try {
-					const result = await authClient.organization.create({
+					const result = await createOrganization({
 						name: nameValue,
 						slug: slugValue
 					});
@@ -64,17 +64,17 @@
 					onSuccess?.();
 
 					// Redirect to the newly created organization
-					if (result.data?.slug) {
+					if (result?.slug) {
 						// If we're already in an org route, replace the org slug
 						if (page.params.organization_slug) {
 							const newPath = page.url.pathname.replace(
 								page.params.organization_slug,
-								result.data.slug
+								result.slug
 							);
 							goto(newPath, { replaceState: true });
 						} else {
 							// Otherwise navigate to the dashboard of the new org
-							goto(`/${result.data.slug}/dashboard`, { replaceState: true });
+							goto(`/${result.slug}/dashboard`, { replaceState: true });
 						}
 					}
 				} catch (error) {

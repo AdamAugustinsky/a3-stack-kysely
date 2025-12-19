@@ -1,9 +1,7 @@
 import { KyselyPGlite } from 'kysely-pglite';
-import { treaty } from '@elysiajs/eden';
 import { Kysely, sql } from 'kysely';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { createElysiaApp } from './elysia';
 import { organization } from 'better-auth/plugins';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { betterAuth } from 'better-auth';
@@ -33,7 +31,7 @@ export const createTestDb = async () => {
 	};
 };
 
-export const createElysiaEdenTestApp = async () => {
+export const createTestApp = async () => {
 	const { db, cleanup } = await createTestDb();
 
 	const dummyGetRequestEvent = () =>
@@ -49,8 +47,6 @@ export const createElysiaEdenTestApp = async () => {
 		emailAndPassword: { enabled: true },
 		plugins: [sveltekitCookies(dummyGetRequestEvent), organization()]
 	});
-
-	const testElysiaApp = createElysiaApp(db, auth);
 
 	// Create test user
 	const testUser = {
@@ -98,18 +94,14 @@ export const createElysiaEdenTestApp = async () => {
 		headers
 	});
 
-	// Create authenticated Eden client
-	const authenticatedEden = treaty(testElysiaApp, {
-		headers: { cookie: sessionCookie }
-	});
-
 	return {
-		eden: authenticatedEden,
 		cleanup,
 		db,
 		auth,
 		testUser,
 		organizationId: orgResult.id,
-		organizationSlug: 'test-org'
+		organizationSlug: 'test-org',
+		sessionCookie,
+		headers
 	};
 };

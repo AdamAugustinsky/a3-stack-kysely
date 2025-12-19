@@ -1,9 +1,82 @@
-import { form, command, getRequestEvent } from '$app/server';
+import { form, command, query, getRequestEvent } from '$app/server';
 import { auth } from '@/server/auth';
 import { error, redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
 
-// Validation schemas
+// ===========================
+// Session & Organization Queries
+// ===========================
+
+// Get current session
+export const getSession = query(async () => {
+	const headers = getRequestEvent().request.headers;
+	const result = await auth.api.getSession({ headers });
+	return result;
+});
+
+// List organizations for current user
+export const listOrganizations = query(async () => {
+	const headers = getRequestEvent().request.headers;
+	const result = await auth.api.listOrganizations({ headers });
+	return Array.isArray(result) ? result : [];
+});
+
+// Get active organization
+export const getActiveOrganization = query(async () => {
+	const headers = getRequestEvent().request.headers;
+	const result = await auth.api.getFullOrganization({ headers });
+	return result ?? null;
+});
+
+// ===========================
+// Organization Commands
+// ===========================
+
+// Set active organization
+const setActiveOrganizationSchema = v.object({
+	organizationId: v.optional(v.union([v.string(), v.null_()])),
+	organizationSlug: v.optional(v.string())
+});
+
+export const setActiveOrganization = command(setActiveOrganizationSchema, async (args) => {
+	const headers = getRequestEvent().request.headers;
+	await auth.api.setActiveOrganization({
+		headers,
+		body: {
+			organizationId: args.organizationId ?? undefined,
+			organizationSlug: args.organizationSlug
+		}
+	});
+	return { ok: true };
+});
+
+// Create organization
+const createOrganizationSchema = v.object({
+	name: v.pipe(v.string(), v.minLength(1, 'Organization name is required')),
+	slug: v.pipe(v.string(), v.minLength(1, 'Organization slug is required')),
+	logo: v.optional(v.string()),
+	keepCurrentActiveOrganization: v.optional(v.boolean())
+});
+
+export const createOrganization = command(createOrganizationSchema, async (data) => {
+	const headers = getRequestEvent().request.headers;
+	const result = await auth.api.createOrganization({
+		headers,
+		body: {
+			name: data.name,
+			slug: data.slug,
+			logo: data.logo,
+			keepCurrentActiveOrganization: data.keepCurrentActiveOrganization
+		}
+	});
+	await listOrganizations().refresh();
+	return result;
+});
+
+// ===========================
+// Auth Forms
+// ===========================
+
 const signinSchema = v.object({
 	email: v.pipe(v.string(), v.email(), v.minLength(1)),
 	password: v.pipe(v.string(), v.minLength(1))
@@ -103,4 +176,54 @@ export const logout = command(async () => {
 	});
 
 	return { success: true };
+});
+
+// ===========================
+// Subscription Functions (Stub - Stripe plugin not configured)
+// ===========================
+
+const listSubscriptionsSchema = v.object({
+	referenceId: v.string()
+});
+
+export const listSubscriptions = query(listSubscriptionsSchema, async ({ referenceId }) => {
+	// Stub: Return empty array when Stripe plugin is not configured
+	// To enable subscriptions, add the stripe plugin to better-auth in src/lib/server/auth.ts
+	console.log('listSubscriptions called for:', referenceId);
+	return [] as {
+		id: string;
+		plan: string;
+		status: 'active' | 'trialing' | 'canceled' | 'past_due' | 'incomplete';
+		stripeSubscriptionId?: string;
+		stripeCustomerId?: string;
+		periodEnd?: string;
+		cancelAtPeriodEnd?: boolean;
+	}[];
+});
+
+const upgradeSubscriptionSchema = v.object({
+	plan: v.string(),
+	referenceId: v.string(),
+	successUrl: v.string(),
+	cancelUrl: v.string(),
+	annual: v.optional(v.boolean())
+});
+
+export const upgradeSubscription = command(upgradeSubscriptionSchema, async (data) => {
+	// Stub: Throw error when Stripe plugin is not configured
+	// To enable subscriptions, add the stripe plugin to better-auth in src/lib/server/auth.ts
+	console.log('upgradeSubscription called:', data);
+	return error(501, 'Stripe subscriptions not configured. Add stripe plugin to better-auth.');
+});
+
+const manageSubscriptionSchema = v.object({
+	referenceId: v.string(),
+	returnUrl: v.string()
+});
+
+export const manageSubscription = command(manageSubscriptionSchema, async (data) => {
+	// Stub: Throw error when Stripe plugin is not configured
+	// To enable subscriptions, add the stripe plugin to better-auth in src/lib/server/auth.ts
+	console.log('manageSubscription called:', data);
+	return error(501, 'Stripe subscriptions not configured. Add stripe plugin to better-auth.');
 });

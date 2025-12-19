@@ -35,7 +35,6 @@
 	import CheckIcon from '@tabler/icons-svelte/icons/check';
 	import CrownIcon from '@tabler/icons-svelte/icons/crown';
 	import UserPlusIcon from '@tabler/icons-svelte/icons/user-plus';
-	import { authClient } from '$lib/auth-client';
 	import {
 		updateOrganization,
 		deleteOrganization,
@@ -46,10 +45,14 @@
 		setActiveOrganization
 	} from '../organization.remote';
 	import { goto, invalidateAll } from '$app/navigation';
+	import type { PageData } from './$types';
 
-	// Reactive organization data
-	const activeOrganization = authClient.useActiveOrganization();
-	const session = authClient.useSession();
+	let { data }: { data: PageData } = $props();
+
+	// Reactive organization data from page data
+	const activeOrganization = $derived(data.activeOrganization);
+	const session = $derived(data.session);
+	const user = $derived(data.user);
 
 	// Organization details state
 	let isEditing = $state(false);
@@ -72,10 +75,8 @@
 
 	// Current user's role in the organization
 	const currentUserRole = $derived.by(() => {
-		if (!$activeOrganization.data || !$session.data?.user) return '';
-		const member = $activeOrganization.data.members?.find(
-			(m) => m.userId === $session.data?.user.id
-		);
+		if (!activeOrganization || !user) return '';
+		const member = activeOrganization.members?.find((m) => m.userId === user.id);
 		return member?.role ?? '';
 	});
 
@@ -107,14 +108,14 @@
 
 	// Save organization details
 	async function handleSaveDetails() {
-		if (!$activeOrganization.data) return;
+		if (!activeOrganization) return;
 
 		isSaving = true;
 		alert = undefined;
 
 		try {
 			await updateOrganization({
-				organizationId: $activeOrganization.data.id,
+				organizationId: activeOrganization.id,
 				data: {
 					name: nameValue,
 					slug: slugValue,
@@ -124,7 +125,7 @@
 
 			alert = { type: 'success', message: 'Organization details updated successfully.' };
 			isEditing = false;
-			$activeOrganization.refetch();
+			await invalidateAll();
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to update organization details.' };
 			console.error('Failed to save organization:', error);
@@ -135,31 +136,31 @@
 
 	// Cancel editing
 	function handleCancelEdit() {
-		if (!$activeOrganization.data) return;
-		nameValue = $activeOrganization.data.name;
-		slugValue = $activeOrganization.data.slug || '';
-		logoValue = $activeOrganization.data.logo || '';
+		if (!activeOrganization) return;
+		nameValue = activeOrganization.name;
+		slugValue = activeOrganization.slug || '';
+		logoValue = activeOrganization.logo || '';
 		isEditing = false;
 		alert = undefined;
 	}
 
 	// Send invitation
 	async function handleSendInvitation() {
-		if (!inviteEmail || !$activeOrganization.data) return;
+		if (!inviteEmail || !activeOrganization) return;
 
 		isInviting = true;
 		try {
 			await inviteMember({
 				email: inviteEmail,
 				role: inviteRole,
-				organizationId: $activeOrganization.data.id
+				organizationId: activeOrganization.id
 			});
 
 			showInviteDialog = false;
 			inviteEmail = '';
 			inviteRole = 'member';
 			alert = { type: 'success', message: 'Invitation sent successfully.' };
-			$activeOrganization.refetch();
+			await invalidateAll();
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to send invitation.' };
 			console.error('Failed to send invitation:', error);
@@ -173,7 +174,7 @@
 		try {
 			await cancelInvitation({ invitationId });
 			alert = { type: 'success', message: 'Invitation cancelled.' };
-			$activeOrganization.refetch();
+			await invalidateAll();
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to cancel invitation.' };
 			console.error('Failed to cancel invitation:', error);
@@ -182,16 +183,16 @@
 
 	// Update member role
 	async function handleUpdateMemberRole(memberId: string, newRole: 'member' | 'admin' | 'owner') {
-		if (!$activeOrganization.data) return;
+		if (!activeOrganization) return;
 
 		try {
 			await updateMemberRole({
 				memberId,
 				role: newRole,
-				organizationId: $activeOrganization.data.id
+				organizationId: activeOrganization.id
 			});
 			alert = { type: 'success', message: 'Member role updated.' };
-			$activeOrganization.refetch();
+			await invalidateAll();
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to update member role.' };
 			console.error('Failed to update member role:', error);
@@ -200,15 +201,15 @@
 
 	// Remove member
 	async function handleRemoveMember(memberId: string, userEmail: string) {
-		if (!$activeOrganization.data) return;
+		if (!activeOrganization) return;
 
 		try {
 			await removeMember({
 				memberIdOrEmail: userEmail,
-				organizationId: $activeOrganization.data.id
+				organizationId: activeOrganization.id
 			});
 			alert = { type: 'success', message: 'Member removed from organization.' };
-			$activeOrganization.refetch();
+			await invalidateAll();
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to remove member.' };
 			console.error('Failed to remove member:', error);
@@ -217,11 +218,11 @@
 
 	// Delete organization
 	async function handleDeleteOrganization() {
-		if (!$activeOrganization.data) return;
+		if (!activeOrganization) return;
 
 		try {
 			await deleteOrganization({
-				organizationId: $activeOrganization.data.id
+				organizationId: activeOrganization.id
 			});
 
 			// Clear active organization and redirect
@@ -265,11 +266,7 @@
 			<p class="text-muted-foreground">Manage your organization, members, and permissions.</p>
 		</div>
 		{#if isAdmin && !isEditing}
-			<Button
-				variant="outline"
-				onclick={() => (isEditing = true)}
-				disabled={$activeOrganization.isPending}
-			>
+			<Button variant="outline" onclick={() => (isEditing = true)}>
 				<BuildingIcon class="mr-2 size-4 shrink-0" />
 				<span class="truncate">Edit Organization</span>
 			</Button>
@@ -292,53 +289,30 @@
 		</div>
 	{/if}
 
-	{#if $activeOrganization.isPending}
-		<!-- Loading skeleton -->
-		<div class="grid grid-cols-1 gap-5 md:grid-cols-3">
-			<Card class="md:col-span-2">
-				<CardHeader>
-					<Skeleton class="h-8 w-48" />
-					<Skeleton class="h-4 w-64" />
-				</CardHeader>
-				<CardContent class="space-y-4">
-					<Skeleton class="h-32 w-full" />
-				</CardContent>
-			</Card>
-			<div class="space-y-5">
-				<Card>
-					<CardHeader>
-						<Skeleton class="h-6 w-32" />
-					</CardHeader>
-					<CardContent>
-						<Skeleton class="h-24 w-full" />
-					</CardContent>
-				</Card>
-			</div>
-		</div>
-	{:else if $activeOrganization.data}
+	{#if activeOrganization}
 		<div class="grid grid-cols-1 gap-5 md:grid-cols-3">
 			<!-- Left: Organization Details -->
 			<Card class="md:col-span-2">
 				<CardHeader class="pb-1">
 					<div class="flex items-center gap-4">
 						<Avatar class="size-16 shrink-0 sm:size-20">
-							{#if $activeOrganization.data.logo}
+							{#if activeOrganization.logo}
 								<AvatarImage
-									src={$activeOrganization.data.logo}
-									alt={$activeOrganization.data.name}
+									src={activeOrganization.logo}
+									alt={activeOrganization.name}
 								/>
 							{/if}
 							<AvatarFallback class="text-base sm:text-lg">
-								{$activeOrganization.data.name.slice(0, 2).toUpperCase()}
+								{activeOrganization.name.slice(0, 2).toUpperCase()}
 							</AvatarFallback>
 						</Avatar>
 						<div class="min-w-0 space-y-1">
 							<CardTitle class="truncate text-xl sm:text-2xl"
-								>{$activeOrganization.data.name}</CardTitle
+								>{activeOrganization.name}</CardTitle
 							>
-							{#if $activeOrganization.data.slug}
+							{#if activeOrganization.slug}
 								<CardDescription class="truncate text-sm sm:text-base">
-									/{$activeOrganization.data.slug}
+									/{activeOrganization.slug}
 								</CardDescription>
 							{/if}
 						</div>
@@ -366,7 +340,7 @@
 							{:else}
 								<div class="flex items-center space-x-2 py-1">
 									<BuildingIcon class="size-4 shrink-0 text-muted-foreground" />
-									<span class="truncate text-sm">{$activeOrganization.data.name}</span>
+									<span class="truncate text-sm">{activeOrganization.name}</span>
 								</div>
 							{/if}
 						</div>
@@ -387,7 +361,7 @@
 							{:else}
 								<div class="flex items-center space-x-2 py-1">
 									<span class="truncate font-mono text-sm"
-										>/{$activeOrganization.data.slug || 'no-slug'}</span
+										>/{activeOrganization.slug || 'no-slug'}</span
 									>
 								</div>
 							{/if}
@@ -406,9 +380,9 @@
 								<p class="text-xs text-muted-foreground">
 									Provide a URL to your organization's logo.
 								</p>
-							{:else if $activeOrganization.data.logo}
+							{:else if activeOrganization.logo}
 								<div class="flex items-center space-x-2 py-1">
-									<span class="truncate text-sm">{$activeOrganization.data.logo}</span>
+									<span class="truncate text-sm">{activeOrganization.logo}</span>
 								</div>
 							{:else}
 								<span class="text-sm text-muted-foreground">No logo set</span>
@@ -444,7 +418,7 @@
 								<span class="text-sm font-medium">Created</span>
 							</div>
 							<span class="truncate text-sm text-muted-foreground">
-								{formatDate($activeOrganization.data.createdAt)}
+								{formatDate(activeOrganization.createdAt)}
 							</span>
 						</div>
 
@@ -455,13 +429,13 @@
 							</div>
 							<div class="flex max-w-[65%] items-center gap-2">
 								<span class="truncate font-mono text-xs text-muted-foreground">
-									{$activeOrganization.data.id}
+									{activeOrganization.id}
 								</span>
 								<Button
 									size="sm"
 									variant="outline"
 									class="h-7 shrink-0"
-									onclick={() => copy($activeOrganization.data?.id ?? '')}
+									onclick={() => copy(activeOrganization?.id ?? '')}
 								>
 									Copy
 								</Button>
@@ -474,8 +448,8 @@
 								<span class="text-sm font-medium">Members</span>
 							</div>
 							<span class="text-sm font-medium whitespace-nowrap">
-								{$activeOrganization.data?.members.length}
-								{$activeOrganization.data?.members.length === 1 ? 'member' : 'members'}
+								{activeOrganization?.members.length}
+								{activeOrganization?.members.length === 1 ? 'member' : 'members'}
 							</span>
 						</div>
 
@@ -535,7 +509,7 @@
 				</div>
 			</CardHeader>
 			<CardContent>
-				{#if $activeOrganization.data?.members.length > 0}
+				{#if activeOrganization?.members.length > 0}
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -548,7 +522,7 @@
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{#each $activeOrganization.data?.members as member (member.id)}
+							{#each activeOrganization?.members as member (member.id)}
 								<TableRow>
 									<TableCell>
 										<div class="flex items-center gap-3">
@@ -569,7 +543,7 @@
 										</div>
 									</TableCell>
 									<TableCell>
-										{#if isOwner && member.userId !== $session.data?.user?.id && member.role !== 'owner'}
+										{#if isOwner && member.userId !== user?.id && member.role !== 'owner'}
 											<select
 												value={member.role}
 												onchange={(e) =>
@@ -598,7 +572,7 @@
 									</TableCell>
 									{#if isAdmin}
 										<TableCell class="text-right">
-											{#if member.userId !== $session.data?.user?.id && member.role !== 'owner'}
+											{#if member.userId !== user?.id && member.role !== 'owner'}
 												<Button
 													size="sm"
 													variant="ghost"
@@ -620,7 +594,7 @@
 		</Card>
 
 		<!-- Invitations Section -->
-		{#if $activeOrganization.data && $activeOrganization.data.invitations.length > 0}
+		{#if activeOrganization && activeOrganization.invitations.length > 0}
 			<Card class="mt-5">
 				<CardHeader class="pb-1">
 					<CardTitle>Pending Invitations</CardTitle>
@@ -639,7 +613,7 @@
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{#each $activeOrganization.data.invitations as invitation (invitation.id)}
+							{#each activeOrganization.invitations as invitation (invitation.id)}
 								<TableRow>
 									<TableCell>
 										<div class="flex items-center gap-2">
@@ -738,7 +712,7 @@
 			<AlertDialog.Title>Are you absolutely sure?</AlertDialog.Title>
 			<AlertDialog.Description>
 				This action cannot be undone. This will permanently delete the organization
-				<span class="font-semibold">{$activeOrganization.data?.name}</span> and remove all associated
+				<span class="font-semibold">{activeOrganization?.name}</span> and remove all associated
 				data.
 			</AlertDialog.Description>
 		</AlertDialog.Header>

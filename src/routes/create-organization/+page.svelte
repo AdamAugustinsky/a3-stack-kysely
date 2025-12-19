@@ -1,18 +1,15 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { authClient } from '@/auth-client';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { GalleryVerticalEndIcon } from '@lucide/svelte';
+	import { createOrganization, setActiveOrganization } from '../auth.remote';
 
 	let errorValue = $state<string | undefined>();
 	let loading = $state(false);
 	let nameValue = $state('');
 	let slugValue = $state('');
-
-	const session = authClient.useSession();
-	const organizations = authClient.useListOrganizations();
 
 	// Auto-generate slug from name if user hasn't typed a slug yet
 	$effect(() => {
@@ -24,23 +21,14 @@
 		}
 	});
 
-	// Guard route: if unauthenticated, go to sign-in; if already has orgs, go to dashboard
-	$effect(() => {
-		if ($session.data === null) {
-			goto('/sign-in');
-		} else if ($session.data && $organizations.data && $organizations.data.length > 0) {
-			goto(`/${$organizations.data[0].slug}/dashboard`);
-		}
-	});
-
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		errorValue = undefined;
 		loading = true;
 		try {
-			await authClient.organization.create({ name: nameValue, slug: slugValue });
+			await createOrganization({ name: nameValue, slug: slugValue });
 			try {
-				await authClient.organization.setActive({ organizationSlug: slugValue });
+				await setActiveOrganization({ organizationSlug: slugValue });
 			} catch {
 				// Ignore setActive errors - organization was still created
 			}

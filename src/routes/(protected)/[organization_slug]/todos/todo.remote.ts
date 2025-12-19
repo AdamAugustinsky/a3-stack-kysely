@@ -1,7 +1,8 @@
-import { command, form, query, getRequestEvent } from '$app/server';
+import { command, form, query } from '$app/server';
 import { Task } from '$lib/schemas/todo';
-import { eden } from '$lib/server/eden';
-import { headersToRecord } from '$lib/server/headers-helper';
+import { getOrganizationContext } from '$lib/server/auth-helpers';
+import { db } from '$lib/server/db';
+import { applyFilters } from '$lib/utils/kysely-filter-builder';
 import { error } from '@sveltejs/kit';
 import * as v from 'valibot';
 import { filterSchema } from '$lib/utils/filter';
@@ -14,13 +15,9 @@ const toTask = (input: {
 	readonly priority: string;
 	readonly status: string;
 	readonly label: string;
-	readonly created_at: string | Date;
-	readonly updated_at: string | Date;
+	readonly created_at: Date;
+	readonly updated_at: Date;
 }): Task => {
-	const createdAt =
-		input.created_at instanceof Date ? input.created_at : new Date(input.created_at);
-	const updatedAt =
-		input.updated_at instanceof Date ? input.updated_at : new Date(input.updated_at);
 	return v.parse(Task, {
 		id: input.id,
 		text: input.text,
@@ -28,8 +25,8 @@ const toTask = (input: {
 		priority: input.priority,
 		status: input.status,
 		label: input.label,
-		createdAt,
-		updatedAt
+		createdAt: input.created_at,
+		updatedAt: input.updated_at
 	});
 };
 
@@ -39,24 +36,17 @@ const getTodosSchema = v.object({
 });
 
 export const getTodos = query(getTodosSchema, async ({ organizationSlug, filters }) => {
-	const headers = headersToRecord(getRequestEvent().request.headers);
-	const queryParams = filters && filters.length > 0 ? { filters: JSON.stringify(filters) } : {};
+	const { organizationId } = await getOrganizationContext(organizationSlug);
 
-	const response = await eden.api.org({ organizationSlug }).todo.get({
-		headers,
-		query: queryParams
-	});
+	let todoQuery = db.selectFrom('todo').selectAll().where('organization_id', '=', organizationId);
 
-	if (response.error) {
-		console.error('Remote function - API error:', response.error);
-		error(500, 'Failed to fetch todos');
+	// Apply filters if provided
+	if (filters && filters.length > 0) {
+		todoQuery = applyFilters(todoQuery, filters);
 	}
-	if (!Array.isArray(response.data)) {
-		console.error('Remote function - unexpected response format:', response.data);
-		error(500, 'Invalid response format');
-	}
-	console.log('Remote function - received', response.data.length, 'todos from API');
-	return response.data.map(toTask);
+
+	const result = await todoQuery.execute();
+	return result.map(toTask);
 });
 
 // Form schema for create todo - handles form data string conversion
@@ -92,23 +82,21 @@ const createTodoFormSchema = v.object({
 export const createTodo = form(
 	createTodoFormSchema,
 	async ({ organizationSlug, text, completed, priority, status, label }) => {
-		const event = getRequestEvent();
-		const headers = headersToRecord(event.request.headers);
-		const response = await eden.api.org({ organizationSlug }).todo.post(
-			{
-				text,
-				completed,
-				priority,
-				status,
-				label
-			},
-			{ headers }
-		);
+		const { organizationId } = await getOrganizationContext(organizationSlug);
 
-		if (response.error) {
-			console.error('Failed to create todo', response.error);
-			error(500, 'Failed to create todo');
-		}
+		await db
+			.insertInto('todo')
+			.values({
+				text,
+				completed: completed ?? false,
+				priority: priority ?? 'medium',
+				status: status ?? 'todo',
+				label: label ?? 'feature',
+				organization_id: organizationId,
+				created_at: new Date(),
+				updated_at: new Date()
+			})
+			.execute();
 
 		return { success: true };
 	}
@@ -122,13 +110,16 @@ const deleteTodoSchema = v.object({
 });
 
 export const deleteTodo = command(deleteTodoSchema, async ({ organizationSlug, id, filters }) => {
-	const headers = headersToRecord(getRequestEvent().request.headers);
-	const response = await eden.api
-		.org({ organizationSlug })
-		.todo({ id })
-		.delete(undefined, { headers });
+	const { organizationId } = await getOrganizationContext(organizationSlug);
 
-	if (response.error) {
+	const deleted = await db
+		.deleteFrom('todo')
+		.where('id', '=', id)
+		.where('organization_id', '=', organizationId)
+		.returningAll()
+		.execute();
+
+	if (deleted.length === 0) {
 		error(404, 'Todo not found');
 	}
 
@@ -171,6 +162,8 @@ export const bulkUpdateTodos = command(
 			error(400, 'No todo IDs provided');
 		}
 
+		const { organizationId } = await getOrganizationContext(organizationSlug);
+
 		// Filter out undefined values from updates
 		const filteredUpdates = Object.fromEntries(
 			Object.entries(updates).filter(([, value]) => value !== undefined)
@@ -186,20 +179,15 @@ export const bulkUpdateTodos = command(
 			error(400, 'No valid updates provided');
 		}
 
-		const headers = headersToRecord(getRequestEvent().request.headers);
-		const response = await eden.api.org({ organizationSlug }).todo.bulk.patch(
-			{
-				ids,
-				updates: filteredUpdates
-			},
-			{ headers }
-		);
-
-		if (response.error) {
-			error(404, 'No todos found with the provided IDs');
-		}
-
-		// Note: Query will be refreshed automatically when the component re-renders
+		await db
+			.updateTable('todo')
+			.set({
+				...filteredUpdates,
+				updated_at: new Date()
+			})
+			.where('id', 'in', ids)
+			.where('organization_id', '=', organizationId)
+			.execute();
 
 		return { success: true, updatedCount: ids.length };
 	}
@@ -219,15 +207,16 @@ export const bulkDeleteTodos = command(
 			error(400, 'No todo IDs provided');
 		}
 
-		const headers = headersToRecord(getRequestEvent().request.headers);
-		const response = await eden.api.org({ organizationSlug }).todo.bulk.delete(
-			{
-				ids
-			},
-			{ headers }
-		);
+		const { organizationId } = await getOrganizationContext(organizationSlug);
 
-		if (response.error) {
+		const deleted = await db
+			.deleteFrom('todo')
+			.where('id', 'in', ids)
+			.where('organization_id', '=', organizationId)
+			.returningAll()
+			.execute();
+
+		if (deleted.length === 0) {
 			error(404, 'No todos found with the provided IDs');
 		}
 
@@ -288,7 +277,8 @@ const updateTodoFormSchema = v.object({
 export const updateTodo = form(
 	updateTodoFormSchema,
 	async ({ organizationSlug, id, ...maybeUpdates }) => {
-		const headers = headersToRecord(getRequestEvent().request.headers);
+		const { organizationId } = await getOrganizationContext(organizationSlug);
+
 		const updates = Object.fromEntries(
 			Object.entries(maybeUpdates).filter(([, value]) => value !== undefined)
 		) as Partial<Pick<Task, 'text' | 'label' | 'status' | 'priority'>> & {
@@ -299,12 +289,18 @@ export const updateTodo = form(
 			error(400, 'No updates provided');
 		}
 
-		const response = await eden.api
-			.org({ organizationSlug })
-			.todo({ id })
-			.patch(updates, { headers });
+		const result = await db
+			.updateTable('todo')
+			.set({
+				...updates,
+				updated_at: new Date()
+			})
+			.where('id', '=', id)
+			.where('organization_id', '=', organizationId)
+			.returningAll()
+			.execute();
 
-		if (response.error) {
+		if (result.length === 0) {
 			return error(404, { message: 'Todo not found' });
 		}
 
