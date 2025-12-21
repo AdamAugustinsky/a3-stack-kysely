@@ -50,12 +50,13 @@ export const setActiveOrganization = command(setActiveOrganizationSchema, async 
 	return { ok: true };
 });
 
-// Create organization form
+// Create organization
 const createOrganizationSchema = v.object({
 	name: v.pipe(v.string(), v.minLength(1, 'Organization name is required')),
 	slug: v.pipe(v.string(), v.minLength(1, 'Organization slug is required'))
 });
 
+// Form version for dedicated pages with automatic redirect
 export const createOrganizationForm = form(createOrganizationSchema, async (data) => {
 	const headers = getRequestEvent().request.headers;
 	await auth.api.createOrganization({
@@ -74,6 +75,20 @@ export const createOrganizationForm = form(createOrganizationSchema, async (data
 
 	await listOrganizations().refresh();
 	redirect(303, `/${data.slug}/dashboard`);
+});
+
+// Form version for dialogs - returns result without redirect
+export const createOrganizationDialogForm = form(createOrganizationSchema, async (data) => {
+	const headers = getRequestEvent().request.headers;
+	const result = await auth.api.createOrganization({
+		headers,
+		body: {
+			name: data.name,
+			slug: data.slug
+		}
+	});
+	await listOrganizations().refresh();
+	return result;
 });
 
 // ===========================

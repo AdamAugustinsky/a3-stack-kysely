@@ -46,7 +46,7 @@
 						placeholder="Acme Inc"
 						disabled={!!createOrganizationForm.pending}
 					/>
-					{#each createOrganizationForm.fields.name.issues() as issue}
+					{#each createOrganizationForm.fields.name.issues() as issue (issue.message)}
 						<p class="text-xs text-destructive">{issue.message}</p>
 					{/each}
 				</div>
@@ -59,7 +59,7 @@
 						placeholder="acme-inc"
 						disabled={!!createOrganizationForm.pending}
 					/>
-					{#each createOrganizationForm.fields.slug.issues() as issue}
+					{#each createOrganizationForm.fields.slug.issues() as issue (issue.message)}
 						<p class="text-xs text-destructive">{issue.message}</p>
 					{/each}
 					<p class="text-xs text-muted-foreground">
@@ -67,7 +67,7 @@
 					</p>
 				</div>
 
-				{#each createOrganizationForm.fields.allIssues() as issue}
+				{#each createOrganizationForm.fields.allIssues() as issue (issue.message)}
 					<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{issue.message}</div>
 				{/each}
 

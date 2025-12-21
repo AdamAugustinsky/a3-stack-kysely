@@ -3,37 +3,33 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { createOrganization } from '../../routes/auth.remote';
+	import { createOrganizationDialogForm } from '../../routes/auth.remote';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 
 	let { open = $bindable(false), onSuccess }: { open?: boolean; onSuccess?: () => void } = $props();
 
-	let errorValue = $state<string | undefined>();
-	let loading = $state(false);
-	let nameValue = $state('');
-	let slugValue = $state('');
+	const dialogForm = createOrganizationDialogForm.for('dialog');
 
 	// Auto-generate slug from name
 	$effect(() => {
-		const proposalSlug = nameValue
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, '-')
-			.replace(/^-|-$/g, '');
-
-		if (nameValue && slugValue !== proposalSlug) {
-			slugValue = proposalSlug;
+		const name = dialogForm.fields.name.value();
+		const slug = dialogForm.fields.slug.value();
+		if (name && !slug) {
+			dialogForm.fields.slug.set(
+				name
+					.toLowerCase()
+					.replace(/[^a-z0-9]+/g, '-')
+					.replace(/^-|-$/g, '')
+			);
 		}
 	});
 
 	function handleOpenChange(value: boolean) {
 		open = value;
 		if (!value) {
-			// Reset form when closing
-			errorValue = undefined;
-			nameValue = '';
-			slugValue = '';
+			dialogForm.fields.set({ name: '', slug: '' });
 		}
 	}
 </script>
@@ -48,24 +44,15 @@
 		</Dialog.Header>
 
 		<form
-			onsubmit={async (e) => {
-				e.preventDefault();
-				errorValue = undefined;
-				loading = true;
-
+			{...dialogForm.enhance(async ({ form, submit }) => {
 				try {
-					const result = await createOrganization({
-						name: nameValue,
-						slug: slugValue
-					});
+					await submit();
+					const result = dialogForm.result;
 
 					open = false;
-					// Call success callback to refresh organization list
 					onSuccess?.();
 
-					// Redirect to the newly created organization
 					if (result?.slug) {
-						// If we're already in an org route, replace the org slug
 						if (page.params.organization_slug) {
 							const newPath = page.url.pathname.replace(
 								page.params.organization_slug,
@@ -73,60 +60,57 @@
 							);
 							goto(newPath, { replaceState: true });
 						} else {
-							// Otherwise navigate to the dashboard of the new org
 							goto(`/${result.slug}/dashboard`, { replaceState: true });
 						}
 					}
-				} catch (error) {
-					if (error instanceof Error) {
-						errorValue = error.message;
-					} else {
-						errorValue = 'An unexpected error occurred';
-					}
-				} finally {
-					loading = false;
+
+					form.reset();
+				} catch {
+					// Errors are shown via field issues
 				}
-			}}
+			})}
 			class="space-y-4"
 		>
 			<div class="space-y-2">
-				<Label for="name">Organization name</Label>
+				<Label for="dialog-name">Organization name</Label>
 				<Input
-					id="name"
-					name="name"
-					bind:value={nameValue}
+					{...dialogForm.fields.name.as('text')}
+					id="dialog-name"
 					placeholder="Acme Inc"
-					disabled={loading}
-					required
+					disabled={!!dialogForm.pending}
 				/>
+				{#each dialogForm.fields.name.issues() as issue (issue.message)}
+					<p class="text-xs text-destructive">{issue.message}</p>
+				{/each}
 			</div>
 
 			<div class="space-y-2">
-				<Label for="slug">Organization slug</Label>
+				<Label for="dialog-slug">Organization slug</Label>
 				<Input
-					id="slug"
-					name="slug"
-					bind:value={slugValue}
+					{...dialogForm.fields.slug.as('text')}
+					id="dialog-slug"
 					placeholder="acme-inc"
-					disabled={loading}
-					required
+					disabled={!!dialogForm.pending}
 				/>
+				{#each dialogForm.fields.slug.issues() as issue (issue.message)}
+					<p class="text-xs text-destructive">{issue.message}</p>
+				{/each}
 				<p class="text-xs text-muted-foreground">
 					Used in URLs and must be unique. Only lowercase letters, numbers, and hyphens.
 				</p>
 			</div>
 
-			{#if errorValue}
+			{#each dialogForm.fields.allIssues() as issue (issue.message)}
 				<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-					{errorValue}
+					{issue.message}
 				</div>
-			{/if}
+			{/each}
 
 			<Dialog.Footer>
-				<Button type="button" variant="outline" onclick={() => (open = false)} disabled={loading}>
+				<Button type="button" variant="outline" onclick={() => (open = false)} disabled={!!dialogForm.pending}>
 					Cancel
 				</Button>
-				<Button type="submit" disabled={loading}>
+				<Button type="submit" disabled={!!dialogForm.pending}>
 					<PlusIcon class="mr-2 size-4" />
 					Create organization
 				</Button>
