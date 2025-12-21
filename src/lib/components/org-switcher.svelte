@@ -6,7 +6,6 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import CreateOrganizationDialog from './create-organization-dialog.svelte';
 	import { page } from '$app/state';
-	import { listSubscriptions } from '../../routes/auth.remote';
 	import { GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
@@ -30,46 +29,6 @@
 
 	// Fallback icons map by index to keep current UI vibe when no logo is set
 	const fallbackLogos = [GalleryVerticalEndIcon, AudioWaveformIcon, CommandIcon];
-
-	// Track subscriptions for organizations - type inferred from listSubscriptions
-	let subscriptions = $state<Record<string, Awaited<ReturnType<typeof listSubscriptions>>[number]>>({});
-	let loadingSubscriptions = $state(false);
-
-	async function loadSubscriptions() {
-		if (orgs.length === 0) return;
-
-		loadingSubscriptions = true;
-		try {
-			for (const org of orgs) {
-				const subs = await listSubscriptions({ referenceId: org.id });
-				const activeSub = subs?.find(
-					(sub) => sub.status === 'active' || sub.status === 'trialing'
-				);
-				if (activeSub) {
-					subscriptions[org.id] = activeSub;
-				}
-			}
-		} catch (err) {
-			console.error('Failed to load subscriptions:', err);
-		} finally {
-			loadingSubscriptions = false;
-		}
-	}
-
-	$effect(() => {
-		loadSubscriptions();
-	});
-
-	function getPlan(org: Organization): string {
-		const sub = subscriptions[org.id];
-		if (!sub) return 'Free';
-
-		const planName = sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1);
-		if (sub.status === 'trialing') {
-			return `${planName} (Trial)`;
-		}
-		return planName;
-	}
 
 	const sidebar = useSidebar();
 	let showCreateOrgDialog = $state(false);
@@ -114,11 +73,6 @@
 						<div class="grid flex-1 text-left text-sm leading-tight">
 							<span class="truncate font-medium">
 								{activeOrganization?.name ?? 'Select organization'}
-							</span>
-							<span class="truncate text-xs">
-								{#if activeOrganization}
-									{loadingSubscriptions ? 'Loading...' : getPlan(activeOrganization)}
-								{/if}
 							</span>
 						</div>
 						<ChevronsUpDownIcon class="ml-auto" />
