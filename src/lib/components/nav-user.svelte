@@ -18,12 +18,14 @@
 	const sidebar = Sidebar.useSidebar();
 
 	// Generate initials from user name
-	const initials = user.name
-		.split(' ')
-		.map((word) => word[0])
-		.join('')
-		.toUpperCase()
-		.slice(0, 2);
+	const initials = $derived(
+		user.name
+			.split(' ')
+			.map((word) => word[0])
+			.join('')
+			.toUpperCase()
+			.slice(0, 2)
+	);
 
 	async function handleLogout() {
 		try {

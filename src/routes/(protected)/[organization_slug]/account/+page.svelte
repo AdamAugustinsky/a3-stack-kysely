@@ -34,12 +34,14 @@
 	});
 
 	// Generate initials from user name
-	const initials = data.user.name
-		.split(' ')
-		.map((word) => word[0])
-		.join('')
-		.toUpperCase()
-		.slice(0, 2);
+	const initials = $derived(
+		data.user.name
+			.split(' ')
+			.map((word) => word[0])
+			.join('')
+			.toUpperCase()
+			.slice(0, 2)
+	);
 
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString('en-US', {
