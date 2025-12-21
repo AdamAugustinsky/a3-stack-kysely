@@ -72,7 +72,6 @@
 		"vite": "npm:rolldown-vite@latest"
 	},
 	"dependencies": {
-		"@electric-sql/pglite": "^0.3.14",
 		"better-auth": "^1.4.7",
 		"kysely": "^0.28.9",
 		"kysely-bun-sql": "^0.2.0",
