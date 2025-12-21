@@ -46,7 +46,7 @@
 						placeholder="Acme Inc"
 						disabled={!!createOrganizationForm.pending}
 					/>
-					{#each createOrganizationForm.fields.name.issues() as issue (issue.message)}
+					{#each createOrganizationForm.fields.name.issues() ?? [] as issue (issue.message)}
 						<p class="text-xs text-destructive">{issue.message}</p>
 					{/each}
 				</div>

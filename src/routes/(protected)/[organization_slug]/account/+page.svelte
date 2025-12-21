@@ -17,20 +17,21 @@
 	import ShieldIcon from '@tabler/icons-svelte/icons/shield';
 	import AlertCircleIcon from '@tabler/icons-svelte/icons/alert-circle';
 	import CheckIcon from '@tabler/icons-svelte/icons/check';
-	import { updateProfile } from './profile.remote';
+	import { updateProfileForm } from './profile.remote';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	const { data }: { data: PageData } = $props();
 
-	// Form state
-	let name = $state(data.user.name);
 	let isEditing = $state(false);
-	let isLoading = $state(false);
-
-	// Inline UI state
 	let alert: { type: 'success' | 'error'; message: string } | undefined = $state();
-	let showSkeleton = $state(false);
+
+	// Initialize form with current user name
+	$effect(() => {
+		if (!isEditing) {
+			updateProfileForm.fields.name.set(data.user.name);
+		}
+	});
 
 	// Generate initials from user name
 	const initials = data.user.name
@@ -40,7 +41,6 @@
 		.toUpperCase()
 		.slice(0, 2);
 
-	// Format date
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString('en-US', {
 			year: 'numeric',
@@ -49,31 +49,8 @@
 		});
 	};
 
-	async function handleSave() {
-		isLoading = true;
-		alert = undefined;
-		try {
-			const result = await updateProfile({ name });
-
-			if (result.success) {
-				alert = { type: 'success', message: 'Profile updated successfully.' };
-				await invalidateAll(); // Refresh the page data
-				isEditing = false;
-			}
-		} catch (error) {
-			alert = { type: 'error', message: 'Failed to save profile. Please try again.' };
-			console.error('Failed to save profile:', error);
-		} finally {
-			isLoading = false;
-			// slight UX delay to show loading skeletons if needed
-			showSkeleton = false;
-		}
-	}
-
 	function handleCancel() {
-		// Reset form to original values
-		name = data.user.name;
-		isEditing = false;
+		isEditing = false; // Effect will reset form to data.user.name
 		alert = undefined;
 	}
 
@@ -155,37 +132,38 @@
 					<p class="text-sm text-muted-foreground">Basic information for your account.</p>
 				</div>
 
-				<!-- Skeletons when loading -->
-				{#if isLoading && showSkeleton}
-					<div class="grid gap-4">
-						<div class="h-5 w-24 animate-pulse rounded bg-muted"></div>
-						<div class="h-10 w-full animate-pulse rounded bg-muted"></div>
-						<div class="h-5 w-48 animate-pulse rounded bg-muted"></div>
-					</div>
-				{:else}
-					<div class="grid gap-4">
-						<!-- Name Field -->
+				{#if isEditing}
+					<form
+						{...updateProfileForm.enhance(async ({ submit }) => {
+							try {
+								await submit();
+								if (updateProfileForm.result?.success) {
+									alert = { type: 'success', message: 'Profile updated successfully.' };
+									await invalidateAll();
+									isEditing = false;
+								}
+							} catch {
+								alert = { type: 'error', message: 'Failed to save profile. Please try again.' };
+							}
+						})}
+						class="grid gap-4"
+					>
 						<div class="grid gap-2">
 							<Label for="name">Full Name</Label>
-							{#if isEditing}
-								<Input
-									id="name"
-									bind:value={name}
-									placeholder="Enter your full name"
-									disabled={isLoading}
-								/>
-								<p class="text-xs text-muted-foreground">
-									Use your real name so people can recognize you.
-								</p>
-							{:else}
-								<div class="flex items-center space-x-2 py-1">
-									<UserIcon class="size-4 shrink-0 text-muted-foreground" />
-									<span class="truncate text-sm">{data.user.name}</span>
-								</div>
-							{/if}
+							<Input
+								{...updateProfileForm.fields.name.as('text')}
+								id="name"
+								placeholder="Enter your full name"
+								disabled={!!updateProfileForm.pending}
+							/>
+							{#each updateProfileForm.fields.name.issues() ?? [] as issue (issue.message)}
+								<p class="text-xs text-destructive">{issue.message}</p>
+							{/each}
+							<p class="text-xs text-muted-foreground">
+								Use your real name so people can recognize you.
+							</p>
 						</div>
 
-						<!-- Email Field (read only) -->
 						<div class="grid gap-2">
 							<Label for="email">Email Address</Label>
 							<div class="flex items-center space-x-2 py-1">
@@ -197,17 +175,35 @@
 							</div>
 						</div>
 
-						<!-- Action Buttons (only show when editing) -->
-						{#if isEditing}
-							<div class="flex flex-col gap-2 pt-2 sm:flex-row">
-								<Button onclick={handleSave} disabled={isLoading}>
-									{isLoading ? 'Saving...' : 'Save Changes'}
-								</Button>
-								<Button variant="outline" onclick={handleCancel} disabled={isLoading}>
-									Cancel
-								</Button>
+						<div class="flex flex-col gap-2 pt-2 sm:flex-row">
+							<Button type="submit" disabled={!!updateProfileForm.pending}>
+								{updateProfileForm.pending ? 'Saving...' : 'Save Changes'}
+							</Button>
+							<Button type="button" variant="outline" onclick={handleCancel} disabled={!!updateProfileForm.pending}>
+								Cancel
+							</Button>
+						</div>
+					</form>
+				{:else}
+					<div class="grid gap-4">
+						<div class="grid gap-2">
+							<Label for="name">Full Name</Label>
+							<div class="flex items-center space-x-2 py-1">
+								<UserIcon class="size-4 shrink-0 text-muted-foreground" />
+								<span class="truncate text-sm">{data.user.name}</span>
 							</div>
-						{/if}
+						</div>
+
+						<div class="grid gap-2">
+							<Label for="email">Email Address</Label>
+							<div class="flex items-center space-x-2 py-1">
+								<MailIcon class="size-4 shrink-0 text-muted-foreground" />
+								<span class="truncate text-sm">{data.user.email}</span>
+								<span class="text-xs whitespace-nowrap text-muted-foreground"
+									>(Email cannot be changed)</span
+								>
+							</div>
+						</div>
 					</div>
 				{/if}
 			</CardContent>
