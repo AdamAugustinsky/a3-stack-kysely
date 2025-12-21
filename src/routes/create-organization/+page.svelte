@@ -1,44 +1,23 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { GalleryVerticalEndIcon } from '@lucide/svelte';
-	import { createOrganization, setActiveOrganization } from '../auth.remote';
+	import { createOrganizationForm } from '../auth.remote';
 
-	let errorValue = $state<string | undefined>();
-	let loading = $state(false);
-	let nameValue = $state('');
-	let slugValue = $state('');
-
-	// Auto-generate slug from name if user hasn't typed a slug yet
+	// Auto-generate slug from name
 	$effect(() => {
-		if (nameValue && !slugValue) {
-			slugValue = nameValue
-				.toLowerCase()
-				.replace(/[^a-z0-9]+/g, '-')
-				.replace(/^-|-$/g, '');
+		const name = createOrganizationForm.fields.name.value();
+		const slug = createOrganizationForm.fields.slug.value();
+		if (name && !slug) {
+			createOrganizationForm.fields.slug.set(
+				name
+					.toLowerCase()
+					.replace(/[^a-z0-9]+/g, '-')
+					.replace(/^-|-$/g, '')
+			);
 		}
 	});
-
-	async function handleSubmit(e: SubmitEvent) {
-		e.preventDefault();
-		errorValue = undefined;
-		loading = true;
-		try {
-			await createOrganization({ name: nameValue, slug: slugValue });
-			try {
-				await setActiveOrganization({ organizationSlug: slugValue });
-			} catch {
-				// Ignore setActive errors - organization was still created
-			}
-			goto(`/${slugValue}/dashboard`);
-		} catch (error) {
-			errorValue = error instanceof Error ? error.message : 'Failed to create organization';
-		} finally {
-			loading = false;
-		}
-	}
 </script>
 
 <div class="flex h-full flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
@@ -58,40 +37,42 @@
 				You need an organization to continue. Choose a name and a unique slug.
 			</p>
 
-			<form onsubmit={handleSubmit} class="space-y-4">
+			<form {...createOrganizationForm} class="space-y-4">
 				<div class="space-y-2">
 					<Label for="name">Organization name</Label>
 					<Input
+						{...createOrganizationForm.fields.name.as('text')}
 						id="name"
-						name="name"
-						bind:value={nameValue}
 						placeholder="Acme Inc"
-						disabled={loading}
-						required
+						disabled={!!createOrganizationForm.pending}
 					/>
+					{#each createOrganizationForm.fields.name.issues() as issue}
+						<p class="text-xs text-destructive">{issue.message}</p>
+					{/each}
 				</div>
 
 				<div class="space-y-2">
 					<Label for="slug">Organization slug</Label>
 					<Input
+						{...createOrganizationForm.fields.slug.as('text')}
 						id="slug"
-						name="slug"
-						bind:value={slugValue}
 						placeholder="acme-inc"
-						disabled={loading}
-						required
+						disabled={!!createOrganizationForm.pending}
 					/>
+					{#each createOrganizationForm.fields.slug.issues() as issue}
+						<p class="text-xs text-destructive">{issue.message}</p>
+					{/each}
 					<p class="text-xs text-muted-foreground">
 						Used in URLs. Lowercase, numbers and hyphens only.
 					</p>
 				</div>
 
-				{#if errorValue}
-					<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{errorValue}</div>
-				{/if}
+				{#each createOrganizationForm.fields.allIssues() as issue}
+					<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{issue.message}</div>
+				{/each}
 
 				<div class="flex items-center justify-end gap-2">
-					<Button type="submit" disabled={loading}>Create organization</Button>
+					<Button type="submit" disabled={!!createOrganizationForm.pending}>Create organization</Button>
 				</div>
 			</form>
 		</div>
