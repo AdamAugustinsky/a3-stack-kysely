@@ -101,16 +101,7 @@
 					title: 'Task'
 				});
 			},
-			cell: ({ row }) => {
-				const idSnippet = createRawSnippet<[string]>((getId) => {
-					const id = getId();
-					return {
-						render: () => `<div class="w-[80px]">${id}</div>`
-					};
-				});
-
-				return renderSnippet(idSnippet, row.getValue('id'));
-			},
+			cell: ({ row }) =>  row.original.id,
 			enableSorting: false,
 			enableHiding: false
 		},
