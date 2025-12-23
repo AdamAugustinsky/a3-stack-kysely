@@ -4,7 +4,7 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { cn } from '$lib/utils.js';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { signin } from '@routes/auth.remote';
+	import { signin } from '$lib/remote/auth.remote';
 	import { isHttpError } from '@sveltejs/kit';
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 	import * as Alert from '$lib/components/ui/alert/index.js';

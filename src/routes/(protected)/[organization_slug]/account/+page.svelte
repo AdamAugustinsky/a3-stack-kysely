@@ -17,7 +17,7 @@
 	import ShieldIcon from '@tabler/icons-svelte/icons/shield';
 	import AlertCircleIcon from '@tabler/icons-svelte/icons/alert-circle';
 	import CheckIcon from '@tabler/icons-svelte/icons/check';
-	import { updateProfileForm } from './profile.remote';
+	import { updateProfile } from '$lib/remote/profile.remote';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
@@ -29,7 +29,7 @@
 	// Initialize form with current user name
 	$effect(() => {
 		if (!isEditing) {
-			updateProfileForm.fields.name.set(data.user.name);
+			updateProfile.fields.name.set(data.user.name);
 		}
 	});
 
@@ -136,10 +136,10 @@
 
 				{#if isEditing}
 					<form
-						{...updateProfileForm.enhance(async ({ submit }) => {
+						{...updateProfile.enhance(async ({ submit }) => {
 							try {
 								await submit();
-								if (updateProfileForm.result?.success) {
+								if (updateProfile.result?.success) {
 									alert = { type: 'success', message: 'Profile updated successfully.' };
 									await invalidateAll();
 									isEditing = false;
@@ -153,12 +153,12 @@
 						<div class="grid gap-2">
 							<Label for="name">Full Name</Label>
 							<Input
-								{...updateProfileForm.fields.name.as('text')}
+								{...updateProfile.fields.name.as('text')}
 								id="name"
 								placeholder="Enter your full name"
-								disabled={!!updateProfileForm.pending}
+								disabled={!!updateProfile.pending}
 							/>
-							{#each updateProfileForm.fields.name.issues() ?? [] as issue (issue.message)}
+							{#each updateProfile.fields.name.issues() ?? [] as issue (issue.message)}
 								<p class="text-xs text-destructive">{issue.message}</p>
 							{/each}
 							<p class="text-xs text-muted-foreground">
@@ -178,10 +178,10 @@
 						</div>
 
 						<div class="flex flex-col gap-2 pt-2 sm:flex-row">
-							<Button type="submit" disabled={!!updateProfileForm.pending}>
-								{updateProfileForm.pending ? 'Saving...' : 'Save Changes'}
+							<Button type="submit" disabled={!!updateProfile.pending}>
+								{updateProfile.pending ? 'Saving...' : 'Save Changes'}
 							</Button>
-							<Button type="button" variant="outline" onclick={handleCancel} disabled={!!updateProfileForm.pending}>
+							<Button type="button" variant="outline" onclick={handleCancel} disabled={!!updateProfile.pending}>
 								Cancel
 							</Button>
 						</div>

@@ -7,7 +7,7 @@
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { logout } from '../../routes/auth.remote';
+	import { logout } from '$lib/remote/auth.remote';
 	import { goto } from '$app/navigation';
 	import { navigateToInActiveOrg } from '@/client.utils.svelte';
 

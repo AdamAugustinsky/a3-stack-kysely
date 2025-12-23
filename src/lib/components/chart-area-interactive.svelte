@@ -6,7 +6,7 @@
 	import { scaleUtc } from 'd3-scale';
 	import { Area, AreaChart } from 'layerchart';
 	import { curveNatural } from 'd3-shape';
-	import { getRecentActivity } from '@routes/(protected)/[organization_slug]/dashboard/dashboard.remote';
+	import { getRecentActivity } from '$lib/remote/dashboard.remote';
 
 	type RangeKey = '30d' | '14d' | '7d';
 

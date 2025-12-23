@@ -5,7 +5,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { labels, statuses, priorities } from './data.js';
 	import Label from '@/components/ui/label/label.svelte';
-	import { createTodo } from '../todo.remote.js';
+	import { createTodo } from '$lib/remote/todo.remote';
 	import { isHttpError } from '@sveltejs/kit';
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 	import * as Alert from '$lib/components/ui/alert/index.js';

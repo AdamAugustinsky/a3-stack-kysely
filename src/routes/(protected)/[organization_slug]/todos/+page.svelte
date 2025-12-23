@@ -7,7 +7,7 @@
 	import Kbd from '$lib/components/kbd.svelte';
 	import CirclePlusIcon from '@lucide/svelte/icons/circle-plus';
 	import type { Task } from '$lib/schemas/todo';
-	import { getTodos, deleteTodo, bulkUpdateTodos, bulkDeleteTodos } from './todo.remote';
+	import { getTodos, deleteTodo, bulkUpdateTodos, bulkDeleteTodos } from '$lib/remote/todo.remote';
 	import { FilterStore } from '$lib/components/filter/filter-store.svelte';
 	import { todoFilterConfig } from './filter-config';
 	import { page } from '$app/state';

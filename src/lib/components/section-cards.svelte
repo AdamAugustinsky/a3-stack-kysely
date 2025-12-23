@@ -3,7 +3,7 @@
 	import TrendingUpIcon from '@tabler/icons-svelte/icons/trending-up';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import { getDashboardStats } from '@routes/(protected)/[organization_slug]/dashboard/dashboard.remote';
+	import { getDashboardStats } from '$lib/remote/dashboard.remote';
 
 	const statsQuery = getDashboardStats();
 </script>

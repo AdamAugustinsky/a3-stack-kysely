@@ -5,10 +5,14 @@ import { getRequestEvent } from '$app/server';
 import * as v from 'valibot';
 
 const updateProfileSchema = v.object({
-	name: v.pipe(v.string(), v.minLength(2, 'Name must be at least 2 characters'), v.maxLength(100, 'Name must be less than 100 characters'))
+	name: v.pipe(
+		v.string(),
+		v.minLength(2, 'Name must be at least 2 characters'),
+		v.maxLength(100, 'Name must be less than 100 characters')
+	)
 });
 
-export const updateProfileForm = form(updateProfileSchema, async ({ name }) => {
+export const updateProfile = form(updateProfileSchema, async ({ name }) => {
 	const event = getRequestEvent();
 	if (!event) {
 		error(500, 'Request context not available');
@@ -33,6 +37,3 @@ export const updateProfileForm = form(updateProfileSchema, async ({ name }) => {
 
 	return { success: true, user: response };
 });
-
-// Note: Password change and account deletion are not implemented yet
-// These would require additional Better Auth plugins or custom implementation

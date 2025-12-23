@@ -43,7 +43,7 @@
 		removeMember,
 		cancelInvitation,
 		setActiveOrganization
-	} from '../organization.remote';
+	} from '$lib/remote/organization.remote';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
@@ -51,7 +51,6 @@
 
 	// Reactive organization data from page data
 	const activeOrganization = $derived(data.activeOrganization);
-	const session = $derived(data.session);
 	const user = $derived(data.user);
 
 	// Organization details state

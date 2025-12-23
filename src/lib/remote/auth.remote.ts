@@ -1,93 +1,15 @@
 import { form, command, query, getRequestEvent } from '$app/server';
-import { auth } from '@/server/auth';
+import { auth } from '$lib/server/auth';
 import { error, redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
 
 // ===========================
-// Session & Organization Queries
+// Session Queries
 // ===========================
 
-// Get current session
 export const getSession = query(async () => {
 	const headers = getRequestEvent().request.headers;
 	const result = await auth.api.getSession({ headers });
-	return result;
-});
-
-// List organizations for current user
-export const listOrganizations = query(async () => {
-	const headers = getRequestEvent().request.headers;
-	const result = await auth.api.listOrganizations({ headers });
-	return Array.isArray(result) ? result : [];
-});
-
-// Get active organization
-export const getActiveOrganization = query(async () => {
-	const headers = getRequestEvent().request.headers;
-	const result = await auth.api.getFullOrganization({ headers });
-	return result ?? null;
-});
-
-// ===========================
-// Organization Commands
-// ===========================
-
-// Set active organization
-const setActiveOrganizationSchema = v.object({
-	organizationId: v.optional(v.union([v.string(), v.null_()])),
-	organizationSlug: v.optional(v.string())
-});
-
-export const setActiveOrganization = command(setActiveOrganizationSchema, async (args) => {
-	const headers = getRequestEvent().request.headers;
-	await auth.api.setActiveOrganization({
-		headers,
-		body: {
-			organizationId: args.organizationId ?? undefined,
-			organizationSlug: args.organizationSlug
-		}
-	});
-	return { ok: true };
-});
-
-// Create organization
-const createOrganizationSchema = v.object({
-	name: v.pipe(v.string(), v.minLength(1, 'Organization name is required')),
-	slug: v.pipe(v.string(), v.minLength(1, 'Organization slug is required'))
-});
-
-// Form version for dedicated pages with automatic redirect
-export const createOrganizationForm = form(createOrganizationSchema, async (data) => {
-	const headers = getRequestEvent().request.headers;
-	await auth.api.createOrganization({
-		headers,
-		body: {
-			name: data.name,
-			slug: data.slug
-		}
-	});
-
-	// Set the new organization as active
-	await auth.api.setActiveOrganization({
-		headers,
-		body: { organizationSlug: data.slug }
-	});
-
-	await listOrganizations().refresh();
-	redirect(303, `/${data.slug}/dashboard`);
-});
-
-// Form version for dialogs - returns result without redirect
-export const createOrganizationDialogForm = form(createOrganizationSchema, async (data) => {
-	const headers = getRequestEvent().request.headers;
-	const result = await auth.api.createOrganization({
-		headers,
-		body: {
-			name: data.name,
-			slug: data.slug
-		}
-	});
-	await listOrganizations().refresh();
 	return result;
 });
 
@@ -117,17 +39,20 @@ export const signin = form(signinSchema, async (data) => {
 		asResponse: true
 	});
 
-	// Use response.headers for subsequent API calls to reflect the new session
-	const organizations = await auth.api.listOrganizations({
-		headers: getRequestEvent().request.headers
-	});
-
 	switch (response.status) {
-		case 200:
+		case 200: {
+			// Use response.headers for subsequent API calls to reflect the new session
+			const organizations = await auth.api.listOrganizations({
+				headers: {
+					cookie: response.headers.get('set-cookie') ?? ''
+				}
+			});
+
 			if (Array.isArray(organizations) && organizations.length > 0) {
 				return redirect(303, `/${organizations[0].slug}/dashboard`);
 			}
 			return redirect(303, '/create-organization');
+		}
 		case 401:
 			return error(401, 'Invalid email or password');
 		case 404:
@@ -155,6 +80,8 @@ export const signup = form(signupSchema, async (data) => {
 		asResponse: true
 	});
 
+	console.log({ status: response.status, idk: response });
+
 	switch (response.status) {
 		case 200: {
 			// Ensure the user is signed in after sign up
@@ -164,7 +91,9 @@ export const signup = form(signupSchema, async (data) => {
 			});
 
 			const organizations = await auth.api.listOrganizations({
-				headers: getRequestEvent().request.headers
+				headers: {
+					cookie: response.headers.get('set-cookie') ?? ''
+				}
 			});
 
 			if (Array.isArray(organizations) && organizations.length > 0) {

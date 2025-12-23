@@ -23,29 +23,17 @@
 	import Kbd from '$lib/components/kbd.svelte';
 	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
 	import { page } from '$app/state';
-	import { invalidateAll } from '$app/navigation';
-
-	type Organization = {
-		id: string;
-		name: string;
-		slug?: string;
-		logo?: string | null;
-		metadata?: Record<string, unknown> | null;
-	};
+	import { listOrganizations } from '$lib/remote/organization.remote';
 
 	type Props = ComponentProps<typeof Sidebar.Root> & {
 		user: User;
-		organizations: Organization[] | { data?: Organization[] } | null;
 	};
 
-	let { user, organizations: incomingOrganizations, ...restProps }: Props = $props();
+	let { user, ...restProps }: Props = $props();
 
-	// Normalize organizations from props
-	const organizations = $derived(
-		Array.isArray(incomingOrganizations)
-			? incomingOrganizations
-			: (incomingOrganizations?.data ?? [])
-	);
+	// Use remote function for organization list
+	const organizationsQuery = listOrganizations();
+	const organizations = $derived(organizationsQuery.current ?? []);
 
 	// Get active organization from URL slug
 	const activeOrganization = $derived(
@@ -190,11 +178,7 @@
 			<div class="px-2 py-1.5 text-sm text-muted-foreground">No organizations yet</div>
 		{:else}
 			{#key organizations.length + '-' + (activeOrganization?.id ?? 'none')}
-				<OrgSwitcher
-					orgs={organizations}
-					{activeOrganization}
-					onOrganizationCreated={() => invalidateAll()}
-				/>
+				<OrgSwitcher orgs={organizations} {activeOrganization} />
 			{/key}
 		{/if}
 	</Sidebar.Header>
@@ -227,13 +211,7 @@
 	</Sidebar.Footer>
 </Sidebar.Root>
 
-<CreateOrganizationDialog
-	bind:open={showCreateOrgDialog}
-	onSuccess={() => {
-		// Refresh the organizations list after creating a new one
-		invalidateAll();
-	}}
-/>
+<CreateOrganizationDialog bind:open={showCreateOrgDialog} />
 <CommandPalette
 	bind:open={showCommandPalette}
 	{organizations}
