@@ -3,6 +3,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group/index.js';
+	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { scaleUtc } from 'd3-scale';
 	import { Area, AreaChart } from 'layerchart';
 	import { curveNatural } from 'd3-shape';
@@ -48,23 +49,26 @@
 	} satisfies Chart.ChartConfig;
 </script>
 
-<Card.Root class="@container/card">
-	<Card.Header>
-		<Card.Title>Task Activity</Card.Title>
-		<Card.Description>
-			<span class="hidden @[540px]/card:block">Task completion trends over time</span>
-			<span class="@[540px]/card:hidden">Task trends</span>
-		</Card.Description>
+<Card.Root class="@container/card gap-4 py-4 shadow-xs">
+	<Card.Header class="px-5">
+		<div class="space-y-1">
+			<Card.Title class="text-base font-semibold">Task activity</Card.Title>
+			<Card.Description class="text-sm">
+				<span class="hidden @[540px]/card:block">Task completion trends over time</span>
+				<span class="@[540px]/card:hidden">Task trends</span>
+			</Card.Description>
+		</div>
 		<Card.Action>
 			<ToggleGroup.Root
 				type="single"
 				bind:value={timeRange}
 				variant="outline"
-				class="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
+				size="sm"
+				class="hidden @[767px]/card:flex"
 			>
-				<ToggleGroup.Item value="30d">Last 30 days</ToggleGroup.Item>
-				<ToggleGroup.Item value="14d">Last 14 days</ToggleGroup.Item>
-				<ToggleGroup.Item value="7d">Last 7 days</ToggleGroup.Item>
+				<ToggleGroup.Item value="30d">30d</ToggleGroup.Item>
+				<ToggleGroup.Item value="14d">14d</ToggleGroup.Item>
+				<ToggleGroup.Item value="7d">7d</ToggleGroup.Item>
 			</ToggleGroup.Root>
 			<Select.Root type="single" bind:value={timeRange}>
 				<Select.Trigger
@@ -72,9 +76,7 @@
 					class="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
 					aria-label="Select a value"
 				>
-					<span data-slot="select-value">
-						{selectedLabel}
-					</span>
+					<span data-slot="select-value">{selectedLabel}</span>
 				</Select.Trigger>
 				<Select.Content class="rounded-xl">
 					<Select.Item value="30d" class="rounded-lg">Last 30 days</Select.Item>
@@ -84,23 +86,24 @@
 			</Select.Root>
 		</Card.Action>
 	</Card.Header>
-	<Card.Content class="px-2 pt-4 sm:px-6 sm:pt-6">
+
+	<Card.Content class="px-5">
 		{#if activityQuery.loading}
-			<div class="flex aspect-auto h-[250px] w-full items-center justify-center">
-				<div class="text-center">
-					<div class="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
-					<p class="mt-2 text-sm text-muted-foreground">Loading chart data...</p>
+			<div class="flex h-[220px] w-full items-center justify-center">
+				<div class="flex flex-col items-center gap-2 text-center">
+					<Spinner class="size-5" />
+					<p class="text-sm text-muted-foreground">Loading activity…</p>
 				</div>
 			</div>
 		{:else if activityQuery.error}
-			<div class="flex aspect-auto h-[250px] w-full items-center justify-center">
+			<div class="flex h-[220px] w-full items-center justify-center">
 				<div class="text-center">
-					<p class="text-sm text-destructive">Failed to load chart data</p>
-					<p class="mt-1 text-xs text-muted-foreground">Please try refreshing the page</p>
+					<p class="text-sm text-destructive">Failed to load activity</p>
+					<p class="mt-1 text-xs text-muted-foreground">Try refreshing the page.</p>
 				</div>
 			</div>
 		{:else if filteredData.length > 0}
-			<Chart.Container config={chartConfig} class="aspect-auto h-[250px] w-full">
+			<Chart.Container config={chartConfig} class="aspect-auto h-[220px] w-full">
 				<AreaChart
 					legend
 					data={filteredData}
@@ -170,10 +173,10 @@
 				</AreaChart>
 			</Chart.Container>
 		{:else}
-			<div class="flex aspect-auto h-[250px] w-full items-center justify-center">
+			<div class="flex h-[220px] w-full items-center justify-center">
 				<div class="text-center">
-					<p class="text-sm text-muted-foreground">No activity data available</p>
-					<p class="mt-1 text-xs text-muted-foreground">Start creating tasks to see trends</p>
+					<p class="text-sm text-muted-foreground">No activity yet</p>
+					<p class="mt-1 text-xs text-muted-foreground">Create a few tasks to see trends.</p>
 				</div>
 			</div>
 		{/if}

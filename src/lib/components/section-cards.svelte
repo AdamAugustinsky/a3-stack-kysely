@@ -9,52 +9,41 @@
 </script>
 
 {#if statsQuery.error}
-	<div
-		class="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card"
-	>
-		<Card.Root class="@container/card">
-			<Card.Header>
-				<Card.Description>Error</Card.Description>
-				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-					--
-				</Card.Title>
+	<div class="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+		<Card.Root class="@container/card gap-4 py-4 shadow-xs">
+			<Card.Header class="px-5">
+				<Card.Description class="text-xs">Stats</Card.Description>
+				<Card.Title class="text-xl font-semibold tabular-nums">--</Card.Title>
 				<Card.Action>
 					<Badge variant="destructive">Error</Badge>
 				</Card.Action>
 			</Card.Header>
-			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
-				<div class="line-clamp-1 flex gap-2 font-medium">Failed to load statistics</div>
-				<div class="text-muted-foreground">Please try refreshing the page</div>
-			</Card.Footer>
+			<Card.Content class="px-5">
+				<p class="text-sm font-medium">Failed to load statistics</p>
+				<p class="text-sm text-muted-foreground">Refresh to try again.</p>
+			</Card.Content>
 		</Card.Root>
 	</div>
 {:else if statsQuery.loading}
-	<div
-		class="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card"
-	>
+	<div class="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
 		{#each Array.from({ length: 4 }, (_, i) => i) as i (i)}
-			<Card.Root class="@container/card">
-				<Card.Header>
-					<Card.Description>Loading...</Card.Description>
-					<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-						--
-					</Card.Title>
+			<Card.Root class="@container/card gap-4 py-4 shadow-xs">
+				<Card.Header class="px-5">
+					<Card.Description class="text-xs">Loading</Card.Description>
+					<Card.Title class="text-xl font-semibold tabular-nums">--</Card.Title>
 				</Card.Header>
-				<Card.Footer class="flex-col items-start gap-1.5 text-sm">
-					<div class="line-clamp-1 flex gap-2 font-medium">Loading statistics...</div>
-					<div class="text-muted-foreground">Please wait</div>
-				</Card.Footer>
+				<Card.Content class="px-5">
+					<div class="h-4 w-24 animate-pulse rounded bg-muted"></div>
+				</Card.Content>
 			</Card.Root>
 		{/each}
 	</div>
 {:else}
-	<div
-		class="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card"
-	>
-		<Card.Root class="@container/card">
-			<Card.Header>
-				<Card.Description>Total Tasks</Card.Description>
-				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+	<div class="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+		<Card.Root class="@container/card gap-4 py-4 shadow-xs">
+			<Card.Header class="px-5">
+				<Card.Description class="text-xs">Total tasks</Card.Description>
+				<Card.Title class="text-2xl font-semibold tabular-nums">
 					{statsQuery.current?.totalTodos ?? 0}
 				</Card.Title>
 				<Card.Action>
@@ -64,18 +53,15 @@
 					</Badge>
 				</Card.Action>
 			</Card.Header>
-			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
-				<div class="line-clamp-1 flex gap-2 font-medium">
-					All tasks in your workspace <TrendingUpIcon class="size-4" />
-				</div>
-				<div class="text-muted-foreground">Total number of tasks created</div>
-			</Card.Footer>
+			<Card.Content class="px-5">
+				<p class="text-sm text-muted-foreground">All tasks in this workspace.</p>
+			</Card.Content>
 		</Card.Root>
 
-		<Card.Root class="@container/card">
-			<Card.Header>
-				<Card.Description>Completed Tasks</Card.Description>
-				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+		<Card.Root class="@container/card gap-4 py-4 shadow-xs">
+			<Card.Header class="px-5">
+				<Card.Description class="text-xs">Completed</Card.Description>
+				<Card.Title class="text-2xl font-semibold tabular-nums">
 					{statsQuery.current?.completedTodos ?? 0}
 				</Card.Title>
 				<Card.Action>
@@ -85,20 +71,15 @@
 					</Badge>
 				</Card.Action>
 			</Card.Header>
-			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
-				<div class="line-clamp-1 flex gap-2 font-medium">
-					{statsQuery.current?.completionRate ?? 0}% completion rate <TrendingUpIcon
-						class="size-4"
-					/>
-				</div>
-				<div class="text-muted-foreground">Tasks marked as done</div>
-			</Card.Footer>
+			<Card.Content class="px-5">
+				<p class="text-sm text-muted-foreground">Tasks marked as done.</p>
+			</Card.Content>
 		</Card.Root>
 
-		<Card.Root class="@container/card">
-			<Card.Header>
-				<Card.Description>In Progress</Card.Description>
-				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+		<Card.Root class="@container/card gap-4 py-4 shadow-xs">
+			<Card.Header class="px-5">
+				<Card.Description class="text-xs">In progress</Card.Description>
+				<Card.Title class="text-2xl font-semibold tabular-nums">
 					{statsQuery.current?.inProgressTodos ?? 0}
 				</Card.Title>
 				<Card.Action>
@@ -108,18 +89,15 @@
 					</Badge>
 				</Card.Action>
 			</Card.Header>
-			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
-				<div class="line-clamp-1 flex gap-2 font-medium">
-					Currently being worked on <TrendingUpIcon class="size-4" />
-				</div>
-				<div class="text-muted-foreground">Tasks in active development</div>
-			</Card.Footer>
+			<Card.Content class="px-5">
+				<p class="text-sm text-muted-foreground">Currently being worked on.</p>
+			</Card.Content>
 		</Card.Root>
 
-		<Card.Root class="@container/card">
-			<Card.Header>
-				<Card.Description>High Priority</Card.Description>
-				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+		<Card.Root class="@container/card gap-4 py-4 shadow-xs">
+			<Card.Header class="px-5">
+				<Card.Description class="text-xs">High priority</Card.Description>
+				<Card.Title class="text-2xl font-semibold tabular-nums">
 					{statsQuery.current?.highPriorityTodos ?? 0}
 				</Card.Title>
 				<Card.Action>
@@ -134,16 +112,9 @@
 					</Badge>
 				</Card.Action>
 			</Card.Header>
-			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
-				<div class="line-clamp-1 flex gap-2 font-medium">
-					{#if (statsQuery.current?.highPriorityTodos ?? 0) > 5}
-						High priority backlog needs attention <TrendingUpIcon class="size-4" />
-					{:else}
-						Priority level is manageable <TrendingDownIcon class="size-4" />
-					{/if}
-				</div>
-				<div class="text-muted-foreground">High priority tasks pending</div>
-			</Card.Footer>
+			<Card.Content class="px-5">
+				<p class="text-sm text-muted-foreground">High priority tasks pending.</p>
+			</Card.Content>
 		</Card.Root>
 	</div>
 {/if}

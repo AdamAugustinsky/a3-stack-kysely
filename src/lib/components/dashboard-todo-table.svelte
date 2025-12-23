@@ -66,22 +66,25 @@
 	}
 </script>
 
-<Card.Root>
-	<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+<Card.Root class="gap-4 py-4 shadow-xs">
+	<Card.Header class="px-5">
 		<div class="space-y-1">
-			<Card.Title class="text-lg font-semibold">Recent Tasks</Card.Title>
-			<Card.Description>Latest tasks and their current status</Card.Description>
+			<Card.Title class="text-base font-semibold">Recent tasks</Card.Title>
+			<Card.Description class="text-sm">Latest tasks and their current status</Card.Description>
 		</div>
-		<Button variant="outline" size="sm" href={'/' + page.params.organization_slug + '/todos'}>
-			View All
-			<ExternalLinkIcon class="ml-2 h-4 w-4" />
-		</Button>
+		<Card.Action>
+			<Button variant="outline" size="sm" href={'/' + page.params.organization_slug + '/todos'}>
+				View all
+				<ExternalLinkIcon class="ml-2 h-4 w-4" />
+			</Button>
+		</Card.Action>
 	</Card.Header>
-	<Card.Content>
+
+	<Card.Content class="px-5">
 		{#if todosQuery.loading}
-			<div class="space-y-3">
+			<div class="space-y-2.5">
 				{#each Array.from({ length: 5 }, (_, i) => i) as i (i)}
-					<div class="flex items-center space-x-4 rounded-lg border p-3">
+					<div class="flex items-center gap-3 rounded-md border px-3 py-2.5">
 						<div class="h-4 w-4 animate-pulse rounded bg-muted"></div>
 						<div class="flex-1 space-y-2">
 							<div class="h-4 w-3/4 animate-pulse rounded bg-muted"></div>
@@ -102,41 +105,33 @@
 				<p class="mt-1 text-sm text-muted-foreground">There was an error loading your tasks.</p>
 				<div class="mt-4">
 					<Button variant="outline" size="sm" onclick={() => window.location.reload()}>
-						Try Again
+						Try again
 					</Button>
 				</div>
 			</div>
 		{:else if todosQuery.current && todosQuery.current.length > 0}
-			<div class="space-y-3">
+			<div class="space-y-2.5">
 				{#each todosQuery.current.slice(0, 8) as todo (todo.id)}
 					{@const statusInfo = getStatusInfo(todo.status)}
 					{@const priorityInfo = getPriorityInfo(todo.priority)}
 					{@const labelInfo = getLabelInfo(todo.label)}
 					<div
-						class="flex items-center space-x-4 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+						class="flex items-center gap-3 rounded-md border px-3 py-2.5 transition-colors hover:bg-muted/40"
 					>
 						<div class="flex h-4 w-4 items-center justify-center">
 							<statusInfo.icon class="h-4 w-4 text-muted-foreground" />
 						</div>
 						<div class="min-w-0 flex-1">
 							<div class="flex items-center gap-2">
-								<Badge variant="outline" class="text-xs">
-									{labelInfo.label}
-								</Badge>
+								<Badge variant="outline" class="text-xs">{labelInfo.label}</Badge>
 								<Badge variant={getPriorityColor(todo.priority)} class="text-xs">
 									<priorityInfo.icon class="mr-1 h-3 w-3" />
 									{priorityInfo.label}
 								</Badge>
 							</div>
-							<p class="mt-1 truncate text-sm leading-none font-medium">
-								{todo.text}
-							</p>
+							<p class="mt-1 truncate text-sm leading-none font-medium">{todo.text}</p>
 						</div>
-						<div class="flex items-center">
-							<Badge variant={getStatusColor(todo.status)} class="text-xs">
-								{statusInfo.label}
-							</Badge>
-						</div>
+						<Badge variant={getStatusColor(todo.status)} class="text-xs">{statusInfo.label}</Badge>
 					</div>
 				{/each}
 			</div>
@@ -144,7 +139,7 @@
 			{#if todosQuery.current.length > 8}
 				<div class="mt-4 text-center">
 					<Button variant="ghost" size="sm" href={'/' + page.params.organization_slug + '/todos'}>
-						View {todosQuery.current.length - 8} more tasks
+						View {todosQuery.current.length - 8} more
 					</Button>
 				</div>
 			{/if}
@@ -154,11 +149,9 @@
 					<ExternalLinkIcon class="h-6 w-6 text-muted-foreground" />
 				</div>
 				<h3 class="mt-2 text-sm font-semibold text-muted-foreground">No tasks yet</h3>
-				<p class="mt-1 text-sm text-muted-foreground">Get started by creating your first task.</p>
+				<p class="mt-1 text-sm text-muted-foreground">Create your first task to get started.</p>
 				<div class="mt-4">
-					<Button size="sm" href={'/' + page.params.organization_slug + '/todos'}
-						>Create Task</Button
-					>
+					<Button size="sm" href={'/' + page.params.organization_slug + '/todos'}>Create task</Button>
 				</div>
 			</div>
 		{/if}
