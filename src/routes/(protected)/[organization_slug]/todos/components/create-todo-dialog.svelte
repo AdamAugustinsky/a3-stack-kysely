@@ -1,16 +1,18 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
+	import * as InputGroup from '$lib/components/ui/input-group/index.js';
+	import * as Field from '$lib/components/ui/field/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { labels, statuses, priorities } from './data.js';
-	import Label from '@/components/ui/label/label.svelte';
 	import { createTodo } from '$lib/remote/todo.remote';
 	import { isHttpError } from '@sveltejs/kit';
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
+	import TextIcon from '@lucide/svelte/icons/text';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { isValidationError, extractFieldErrors } from '$lib/utils/validation-errors.js';
-	import Input from '@/components/ui/input/input.svelte';
 	import { page } from '$app/state';
 
 	let {
@@ -33,11 +35,11 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="sm:max-w-[525px]">
-		<Dialog.Header>
-			<Dialog.Title>Create New Task</Dialog.Title>
-			<Dialog.Description>
-				Add a new task to your todo list. Fill in the details below.
+	<Dialog.Content class="gap-0 p-0 sm:max-w-md">
+		<Dialog.Header class="border-b px-5 py-3.5">
+			<Dialog.Title class="text-base font-semibold">New Task</Dialog.Title>
+			<Dialog.Description class="text-sm text-muted-foreground">
+				Add a task to your list
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -48,16 +50,13 @@
 				isLoading = true;
 				try {
 					await submit();
-					// Success - close dialog and reset form
 					open = false;
 				} catch (error) {
 					if (isHttpError(error)) {
 						if (isValidationError(error.body)) {
-							// Extract field-specific errors using helper function
 							fieldErrors = extractFieldErrors(error.body.errors.nested);
 							createTodoError = 'Please fix the errors below.';
 						} else {
-							// Handle other HTTP errors
 							createTodoError = error.body.message;
 						}
 					} else {
@@ -67,119 +66,138 @@
 					isLoading = false;
 				}
 			})}
-			class="mt-6 space-y-6"
+			class="flex flex-col"
 		>
 			<input type="hidden" name="organizationSlug" value={page.params.organization_slug} />
-			{#if createTodoError}
-				<Alert.Root variant="destructive">
-					<CircleAlertIcon class="size-4" />
-					<Alert.Title>Error</Alert.Title>
-					<Alert.Description>{createTodoError}</Alert.Description>
-				</Alert.Root>
-			{/if}
-			<div>
-				<Label for="task-title">Task Title <span class="text-destructive">*</span></Label>
-				<Input id="task-title" placeholder="What needs to be done?" name="text" />
-				{#if fieldErrors.text}
-					<p class="mt-1 text-sm text-destructive">{fieldErrors.text}</p>
-				{:else}
-					<p class="text-sm text-muted-foreground">Give your task a clear, descriptive title.</p>
+
+			<div class="space-y-3.5 px-5 py-4">
+				{#if createTodoError}
+					<Alert.Root variant="destructive" class="py-2.5">
+						<CircleAlertIcon class="size-4" />
+						<Alert.Description class="text-sm">{createTodoError}</Alert.Description>
+					</Alert.Root>
 				{/if}
+
+				<Field.Field class="gap-1.5">
+					<Field.Label for="task-title" class="text-sm font-medium">
+						Title
+						<span class="text-destructive">*</span>
+					</Field.Label>
+					<InputGroup.Root
+						class={fieldErrors.text ? 'border-destructive ring-destructive/20' : ''}
+					>
+						<InputGroup.Addon>
+							<TextIcon class="size-4 text-muted-foreground" />
+						</InputGroup.Addon>
+						<InputGroup.Input
+							id="task-title"
+							placeholder="What needs to be done?"
+							name="text"
+						/>
+					</InputGroup.Root>
+					{#if fieldErrors.text}
+						<Field.Error>{fieldErrors.text}</Field.Error>
+					{/if}
+				</Field.Field>
+
+				<div class="grid grid-cols-3 gap-2.5">
+					<Field.Field class="gap-1.5">
+						<Field.Label for="label" class="text-sm font-medium">Label</Field.Label>
+						<Select.Root type="single" allowDeselect={false} name="label" value="feature">
+							<Select.Trigger
+								class="w-full {fieldErrors.label ? 'border-destructive' : ''}"
+								id="label"
+							>
+								<Badge variant="outline" class="font-normal">
+									{labels.find((l) => l.value === 'feature')?.label}
+								</Badge>
+							</Select.Trigger>
+							<Select.Content>
+								{#each labels as label (label.value)}
+									<Select.Item value={label.value}>
+										<Badge variant="outline" class="font-normal">
+											{label.label}
+										</Badge>
+									</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+						{#if fieldErrors.label}
+							<Field.Error>{fieldErrors.label}</Field.Error>
+						{/if}
+					</Field.Field>
+
+					<Field.Field class="gap-1.5">
+						<Field.Label for="status" class="text-sm font-medium">Status</Field.Label>
+						<Select.Root type="single" allowDeselect={false} name="status" value="todo">
+							<Select.Trigger
+								class="w-full {fieldErrors.status ? 'border-destructive' : ''}"
+								id="status"
+							>
+								{@const currentStatus = statuses.find((s) => s.value === 'todo')}
+								{#if currentStatus}
+									<span class="flex items-center gap-2">
+										<currentStatus.icon class="size-4 text-muted-foreground" />
+										<span class="truncate">{currentStatus.label}</span>
+									</span>
+								{/if}
+							</Select.Trigger>
+							<Select.Content>
+								{#each statuses as status (status.value)}
+									<Select.Item value={status.value}>
+										<span class="flex items-center gap-2">
+											<status.icon class="size-4 text-muted-foreground" />
+											<span>{status.label}</span>
+										</span>
+									</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+						{#if fieldErrors.status}
+							<Field.Error>{fieldErrors.status}</Field.Error>
+						{/if}
+					</Field.Field>
+
+					<Field.Field class="gap-1.5">
+						<Field.Label for="priority" class="text-sm font-medium">Priority</Field.Label>
+						<Select.Root type="single" allowDeselect={false} name="priority" value="medium">
+							<Select.Trigger
+								class="w-full {fieldErrors.priority ? 'border-destructive' : ''}"
+								id="priority"
+							>
+								{@const currentPriority = priorities.find((p) => p.value === 'medium')}
+								{#if currentPriority}
+									<span class="flex items-center gap-2">
+										<currentPriority.icon class="size-4 text-muted-foreground" />
+										<span class="truncate">{currentPriority.label}</span>
+									</span>
+								{/if}
+							</Select.Trigger>
+							<Select.Content>
+								{#each priorities as priority (priority.value)}
+									<Select.Item value={priority.value}>
+										<span class="flex items-center gap-2">
+											<priority.icon class="size-4 text-muted-foreground" />
+											<span>{priority.label}</span>
+										</span>
+									</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+						{#if fieldErrors.priority}
+							<Field.Error>{fieldErrors.priority}</Field.Error>
+						{/if}
+					</Field.Field>
+				</div>
 			</div>
-			<div class="grid gap-4 sm:grid-cols-3">
-				<div>
-					<Label for="label">Label</Label>
-					<Select.Root type="single" allowDeselect={false} name="label" value="feature">
-						<Select.Trigger class="w-full {fieldErrors.label ? 'border-destructive' : ''}">
-							<Badge variant="outline" class="font-normal" id="label">
-								{labels.find((l) => l.value === 'feature')?.label}
-							</Badge>
-						</Select.Trigger>
-						<Select.Content>
-							{#each labels as label (label.value)}
-								<Select.Item value={label.value}>
-									<Badge variant="outline" class="font-normal">
-										{label.label}
-									</Badge>
-								</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-					{#if fieldErrors.label}
-						<p class="mt-1 text-sm text-destructive">{fieldErrors.label}</p>
-					{/if}
-				</div>
 
-				<div>
-					<Label for="status">Status</Label>
-					<Select.Root type="single" allowDeselect={false} name="status" value="todo">
-						<Select.Trigger
-							class="w-full {fieldErrors.status ? 'border-destructive' : ''}"
-							id="status"
-						>
-							{@const currentStatus = statuses.find((s) => s.value === 'todo')}
-							{#if currentStatus}
-								<div class="flex items-center">
-									<currentStatus.icon class="mr-2 h-4 w-4 text-muted-foreground" />
-									<span>{currentStatus.label}</span>
-								</div>
-							{/if}
-						</Select.Trigger>
-						<Select.Content>
-							{#each statuses as status (status.value)}
-								<Select.Item value={status.value}>
-									<div class="flex items-center">
-										<status.icon class="mr-2 h-4 w-4 text-muted-foreground" />
-										<span>{status.label}</span>
-									</div>
-								</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-					{#if fieldErrors.status}
-						<p class="mt-1 text-sm text-destructive">{fieldErrors.status}</p>
-					{/if}
-				</div>
-
-				<div>
-					<Label for="priority">Priority</Label>
-					<Select.Root type="single" allowDeselect={false} name="priority" value="medium">
-						<Select.Trigger
-							class="w-full {fieldErrors.priority ? 'border-destructive' : ''}"
-							id="priority"
-						>
-							{@const currentPriority = priorities.find((p) => p.value === 'medium')}
-							{#if currentPriority}
-								<div class="flex items-center">
-									<currentPriority.icon class="mr-2 h-4 w-4 text-muted-foreground" />
-									<span>{currentPriority.label}</span>
-								</div>
-							{/if}
-						</Select.Trigger>
-						<Select.Content>
-							{#each priorities as priority (priority.value)}
-								<Select.Item value={priority.value}>
-									<div class="flex items-center">
-										<priority.icon class="mr-2 h-4 w-4 text-muted-foreground" />
-										<span>{priority.label}</span>
-									</div>
-								</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-					{#if fieldErrors.priority}
-						<p class="mt-1 text-sm text-destructive">{fieldErrors.priority}</p>
-					{/if}
-				</div>
-			</div>
-
-			<Dialog.Footer class="gap-2">
-				<Button type="button" variant="outline" onclick={() => (open = false)}>Cancel</Button>
-				<Button type="submit" disabled={isLoading}>
+			<Dialog.Footer class="border-t bg-muted/30 px-5 py-3">
+				<Button type="button" variant="ghost" size="sm" onclick={() => (open = false)}>
+					Cancel
+				</Button>
+				<Button type="submit" size="sm" disabled={isLoading}>
 					{#if isLoading}
-						<div
-							class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent"
-						></div>
+						<Spinner class="mr-2 size-4" />
 						Creating...
 					{:else}
 						Create task
