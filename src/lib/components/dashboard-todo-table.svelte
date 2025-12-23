@@ -11,10 +11,17 @@
 	import { ExternalLinkIcon } from '@lucide/svelte';
 	import { page } from '$app/state';
 
-	const todosQuery = getTodos({
-		organizationSlug: page.params.organization_slug!,
-		filters: []
-	});
+	// Stable reference for filters to prevent infinite re-renders
+	const emptyFilters: [] = [];
+
+	// Use $derived to get the organization slug reactively but with stable filter reference
+	const organizationSlug = $derived(page.params.organization_slug!);
+	const todosQuery = $derived(
+		getTodos({
+			organizationSlug,
+			filters: emptyFilters
+		})
+	);
 
 	function getStatusInfo(status: string) {
 		return statuses.find((s) => s.value === status) || statuses[0];

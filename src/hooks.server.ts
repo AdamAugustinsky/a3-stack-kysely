@@ -9,6 +9,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const isProtectedRoute = event.route.id?.includes('(protected)') ?? false;
 	const isSignRoute = event.route.id == '/sign-in' || event.route.id == '/sign-up';
+
 	if (session) {
 		const organizations = await auth.api.listOrganizations({
 			headers: event.request.headers

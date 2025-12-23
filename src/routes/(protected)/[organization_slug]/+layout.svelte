@@ -6,6 +6,7 @@
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import { listOrganizations, setActiveOrganization } from '$lib/remote/organization.remote';
+	import { untrack } from 'svelte';
 
 	const { children, data }: { children: Snippet; data: LayoutData } = $props();
 
@@ -13,12 +14,17 @@
 	const organizationsQuery = listOrganizations();
 	const organizations = $derived(organizationsQuery.current ?? []);
 
+	// Track what we've already set to avoid duplicate calls
+	let lastSetOrgId: string | null = null;
+
 	// Set active organization when URL slug changes
 	$effect(() => {
-		const organization = organizations.find(
-			(org) => org.slug === page.params.organization_slug
-		);
-		if (organization) {
+		const slug = page.params.organization_slug;
+		// Untrack organizations to prevent re-running when the list refreshes
+		const orgs = untrack(() => organizations);
+		const organization = orgs.find((org) => org.slug === slug);
+		if (organization && organization.id !== lastSetOrgId) {
+			lastSetOrgId = organization.id;
 			setActiveOrganization({
 				organizationId: organization.id
 			});
