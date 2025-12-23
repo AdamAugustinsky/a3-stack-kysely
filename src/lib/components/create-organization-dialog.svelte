@@ -6,11 +6,11 @@
 </script>
 
 <Dialog.Root {open}>
-	<Dialog.Content class="sm:max-w-106.25">
-		<Dialog.Header>
-			<Dialog.Title>Create your first organization</Dialog.Title>
-			<Dialog.Description>
-				Organizations help you manage teams and collaborate. Create your first one to get started.
+	<Dialog.Content class="gap-0 p-0 sm:max-w-md" showCloseButton={false}>
+		<Dialog.Header class="border-b px-5 py-3.5">
+			<Dialog.Title class="text-base font-semibold">Create your first organization</Dialog.Title>
+			<Dialog.Description class="text-sm text-muted-foreground">
+				Organizations help you manage teams and collaborate
 			</Dialog.Description>
 		</Dialog.Header>
 
