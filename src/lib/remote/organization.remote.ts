@@ -15,10 +15,6 @@ import {
 } from '$lib/schemas/organization';
 import * as v from 'valibot';
 
-// ===========================
-// Organization Queries
-// ===========================
-
 export const listOrganizations = query(async () => {
 	const headers = getRequestEvent().request.headers;
 	const result = await auth.api.listOrganizations({ headers });
@@ -74,10 +70,6 @@ export const listInvitations = query(listInvitationsSchema, async (args) => {
 	return Array.isArray(result) ? result : [];
 });
 
-// ===========================
-// Organization Commands
-// ===========================
-
 const setActiveOrganizationSchema = v.object({
 	organizationId: v.optional(v.union([v.string(), v.null_()])),
 	organizationSlug: v.optional(v.string())
@@ -94,10 +86,6 @@ export const setActiveOrganization = command(setActiveOrganizationSchema, async 
 	});
 	return { ok: true };
 });
-
-// ===========================
-// Organization Forms
-// ===========================
 
 const createOrganizationSchema = v.object({
 	name: v.pipe(v.string(), v.minLength(1, 'Organization name is required')),
@@ -159,10 +147,6 @@ export const deleteOrganization = command(deleteOrganizationSchema, async ({ org
 	await listOrganizations().refresh();
 	return { ok: true };
 });
-
-// ===========================
-// Member Management
-// ===========================
 
 export const inviteMember = command(inviteMemberSchema, async (args) => {
 	const headers = getRequestEvent().request.headers;

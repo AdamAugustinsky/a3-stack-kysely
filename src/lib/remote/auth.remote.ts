@@ -3,19 +3,11 @@ import { auth } from '$lib/server/auth';
 import { error, redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
 
-// ===========================
-// Session Queries
-// ===========================
-
 export const getSession = query(async () => {
 	const headers = getRequestEvent().request.headers;
 	const result = await auth.api.getSession({ headers });
 	return result;
 });
-
-// ===========================
-// Auth Forms
-// ===========================
 
 const signinSchema = v.object({
 	email: v.pipe(v.string(), v.email(), v.minLength(1)),
