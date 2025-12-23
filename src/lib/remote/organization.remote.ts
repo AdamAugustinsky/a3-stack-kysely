@@ -136,6 +136,44 @@ export const updateOrganization = command(
 	}
 );
 
+const updateOrganizationFormSchema = v.object({
+	organizationId: v.string(),
+	name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
+	slug: v.pipe(v.string(), v.minLength(1, 'Slug is required')),
+	logo: v.optional(v.string())
+});
+
+export const updateOrganizationForm = form(
+	updateOrganizationFormSchema,
+	async ({ organizationId, name, slug, logo }) => {
+		const headers = getRequestEvent().request.headers;
+		await auth.api.updateOrganization({
+			headers,
+			body: {
+				organizationId,
+				data: { name, slug, logo: logo || undefined }
+			}
+		});
+		await listOrganizations().refresh();
+		return { success: true, newSlug: slug };
+	}
+);
+
+const inviteMemberFormSchema = v.object({
+	organizationId: v.string(),
+	email: v.pipe(v.string(), v.email('Invalid email address')),
+	role: v.picklist(['member', 'admin', 'owner'])
+});
+
+export const inviteMemberForm = form(inviteMemberFormSchema, async ({ organizationId, email, role }) => {
+	const headers = getRequestEvent().request.headers;
+	await auth.api.createInvitation({
+		headers,
+		body: { email, role, organizationId }
+	});
+	return { success: true };
+});
+
 export const deleteOrganization = command(deleteOrganizationSchema, async ({ organizationId }) => {
 	const headers = getRequestEvent().request.headers;
 	await auth.api.deleteOrganization({
