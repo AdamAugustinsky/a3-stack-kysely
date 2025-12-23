@@ -24,7 +24,7 @@
 	import { labels, priorities, statuses } from './data';
 	import { renderComponent, renderSnippet } from '$lib/components/ui/data-table/render-helpers.js';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
-	import { createRawSnippet } from 'svelte';
+
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
@@ -269,7 +269,7 @@
 	{@const status = statuses.find((status) => status.value === value)}
 	{#if status}
 		{@const Icon = status.icon}
-		<div class="flex w-[100px] items-center">
+		<div class="flex w-25 items-center">
 			<Icon class="mr-2 size-4 text-muted-foreground" />
 			<span>{status.label}</span>
 		</div>
@@ -282,7 +282,7 @@
 		{#if label}
 			<Badge variant="outline">{label.label}</Badge>
 		{/if}
-		<span class="max-w-[500px] truncate font-medium">
+		<span class="max-w-125 truncate font-medium">
 			{value}
 		</span>
 	</div>
@@ -317,7 +317,7 @@
 				</Button>
 			{/snippet}
 		</DropdownMenu.Trigger>
-		<DropdownMenu.Content class="w-[160px]" align="end">
+		<DropdownMenu.Content class="w-40" align="end">
 			<DropdownMenu.Item onclick={() => onEdit?.(task)}>Edit</DropdownMenu.Item>
 			<DropdownMenu.Item onclick={() => onDuplicate?.(task)}>Make a copy</DropdownMenu.Item>
 			<DropdownMenu.Separator />
@@ -346,7 +346,7 @@
 						table.setPageSize(Number(value));
 					}}
 				>
-					<Select.Trigger class="h-8 w-[70px]">
+					<Select.Trigger class="h-8 w-17.5">
 						{String(table.getState().pagination.pageSize)}
 					</Select.Trigger>
 					<Select.Content side="top">
@@ -358,7 +358,7 @@
 					</Select.Content>
 				</Select.Root>
 			</div>
-			<div class="flex w-[100px] items-center justify-center text-sm font-medium">
+			<div class="flex w-25 items-center justify-center text-sm font-medium">
 				Page {table.getState().pagination.pageIndex + 1} of
 				{table.getPageCount()}
 			</div>

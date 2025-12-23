@@ -60,7 +60,7 @@
 			placeholder="Acme Inc"
 			disabled={isLoading}
 		/>
-		{#each createOrganization.fields.name.issues() ?? [] as issue}
+		{#each createOrganization.fields.name.issues() ?? [] as issue (issue.message)}
 			<p class="text-xs text-destructive">{issue.message}</p>
 		{/each}
 	</div>
@@ -73,7 +73,7 @@
 			placeholder="acme-inc"
 			disabled={isLoading}
 		/>
-		{#each createOrganization.fields.slug.issues() ?? [] as issue}
+		{#each createOrganization.fields.slug.issues() ?? [] as issue (issue.message)}
 			<p class="text-xs text-destructive">{issue.message}</p>
 		{/each}
 		<p class="text-xs text-muted-foreground">Used in URLs. Lowercase, numbers and hyphens only.</p>

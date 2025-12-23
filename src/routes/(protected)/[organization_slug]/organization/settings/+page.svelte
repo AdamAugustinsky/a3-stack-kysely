@@ -20,7 +20,6 @@
 		TableRow
 	} from '$lib/components/ui/table';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import BuildingIcon from '@tabler/icons-svelte/icons/building';
@@ -550,7 +549,7 @@
 														member.id,
 														e.currentTarget.value as 'member' | 'admin' | 'owner'
 													)}
-												class="flex h-8 w-[100px] items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
+												class="flex h-8 w-25 items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
 											>
 												<option value="member">Member</option>
 												<option value="admin">Admin</option>
@@ -651,7 +650,7 @@
 
 <!-- Invite Member Dialog -->
 <Dialog.Root bind:open={showInviteDialog}>
-	<Dialog.Content class="sm:max-w-[425px]">
+	<Dialog.Content class="sm:max-w-106.25">
 		<Dialog.Header>
 			<Dialog.Title>Invite Member</Dialog.Title>
 			<Dialog.Description>

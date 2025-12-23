@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import CameraIcon from '@tabler/icons-svelte/icons/camera';
-	import CreditCardIcon from '@tabler/icons-svelte/icons/credit-card';
 	import DashboardIcon from '@tabler/icons-svelte/icons/dashboard';
 	import DatabaseIcon from '@tabler/icons-svelte/icons/database';
 	import FileAiIcon from '@tabler/icons-svelte/icons/file-ai';
@@ -81,11 +80,6 @@
 				url: '/organization/settings',
 				icon: SettingsIcon
 			},
-			{
-				title: 'Billing',
-				url: '/organization/billing',
-				icon: CreditCardIcon
-			}
 		],
 		navClouds: [
 			{
