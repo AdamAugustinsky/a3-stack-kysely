@@ -24,6 +24,8 @@
 	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
 	import { page } from '$app/state';
 	import { listOrganizations } from '$lib/remote/organization.remote';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 
 	type Props = ComponentProps<typeof Sidebar.Root> & {
 		user: User;
@@ -32,8 +34,7 @@
 	let { user, ...restProps }: Props = $props();
 
 	// Use remote function for organization list
-	const organizationsQuery = listOrganizations();
-	const organizations = $derived(organizationsQuery.current ?? []);
+	const organizations = $derived(await listOrganizations());
 
 	// Get active organization from URL slug
 	const activeOrganization = $derived(
@@ -56,9 +57,10 @@
 	}
 
 	// If there are no organizations from the server, prompt creation dialog
+	// Only show after the query has finished loading
 	$effect(() => {
 		if (organizations.length === 0) {
-			showCreateOrgDialog = true;
+    		goto(resolve("/create-organization"))
 		}
 	});
 

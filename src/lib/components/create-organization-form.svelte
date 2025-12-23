@@ -36,6 +36,9 @@
 		try {
 			await submit();
 			const slug = createOrganization.fields.slug.value();
+			createOrganization.fields.name.set('');
+			createOrganization.fields.slug.set('');
+
 			goto(resolve('/(protected)/[organization_slug]/dashboard', { organization_slug: slug }));
 		} catch (error) {
 			if (isHttpError(error)) {
@@ -47,7 +50,6 @@
 			isLoading = false;
 		}
 	})}
-	onchange={() => createOrganization.validate()}
 	class="space-y-4"
 >
 	<div class="space-y-2">
