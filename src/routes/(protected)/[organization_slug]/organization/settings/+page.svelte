@@ -44,6 +44,7 @@
 		setActiveOrganization
 	} from '$lib/remote/organization.remote';
 	import { goto, invalidateAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -60,6 +61,35 @@
 	let nameValue = $state('');
 	let slugValue = $state('');
 	let logoValue = $state('');
+
+	// Track if slug was manually edited
+	let slugManuallyEdited = $state(false);
+
+	// Auto-generate slug from name (same logic as create form)
+	function generateSlug(name: string): string {
+		return name
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-|-$/g, '');
+	}
+
+	// Handle name input change
+	function handleNameChange(e: Event) {
+		const input = e.target as HTMLInputElement;
+		nameValue = input.value;
+
+		// Auto-generate slug if not manually edited
+		if (!slugManuallyEdited) {
+			slugValue = generateSlug(nameValue);
+		}
+	}
+
+	// Handle slug input change
+	function handleSlugChange(e: Event) {
+		const input = e.target as HTMLInputElement;
+		slugValue = input.value;
+		slugManuallyEdited = true;
+	}
 
 	// UI state
 	let alert: { type: 'success' | 'error'; message: string } | undefined = $state();
@@ -111,19 +141,33 @@
 		isSaving = true;
 		alert = undefined;
 
+		const oldSlug = activeOrganization.slug;
+		const newSlug = slugValue;
+
 		try {
 			await updateOrganization({
 				organizationId: activeOrganization.id,
 				data: {
 					name: nameValue,
-					slug: slugValue,
+					slug: newSlug,
 					logo: logoValue || undefined
 				}
 			});
 
 			alert = { type: 'success', message: 'Organization details updated successfully.' };
 			isEditing = false;
-			await invalidateAll();
+			slugManuallyEdited = false;
+
+			// Redirect to new slug if it changed
+			if (newSlug && newSlug !== oldSlug) {
+				goto(
+					resolve('/(protected)/[organization_slug]/organization/settings', {
+						organization_slug: newSlug
+					})
+				);
+			} else {
+				await invalidateAll();
+			}
 		} catch (error) {
 			alert = { type: 'error', message: 'Failed to update organization details.' };
 			console.error('Failed to save organization:', error);
@@ -139,6 +183,7 @@
 		slugValue = activeOrganization.slug || '';
 		logoValue = activeOrganization.logo || '';
 		isEditing = false;
+		slugManuallyEdited = false;
 		alert = undefined;
 	}
 
@@ -264,7 +309,18 @@
 			<p class="text-muted-foreground">Manage your organization, members, and permissions.</p>
 		</div>
 		{#if isAdmin && !isEditing}
-			<Button variant="outline" onclick={() => (isEditing = true)}>
+			<Button
+				variant="outline"
+				onclick={() => {
+					if (activeOrganization) {
+						nameValue = activeOrganization.name;
+						slugValue = activeOrganization.slug || '';
+						logoValue = activeOrganization.logo || '';
+						slugManuallyEdited = false;
+					}
+					isEditing = true;
+				}}
+			>
 				<BuildingIcon class="mr-2 size-4 shrink-0" />
 				<span class="truncate">Edit Organization</span>
 			</Button>
@@ -331,7 +387,8 @@
 							{#if isEditing}
 								<Input
 									id="name"
-									bind:value={nameValue}
+									value={nameValue}
+									oninput={handleNameChange}
 									placeholder="Enter organization name"
 									disabled={isSaving}
 								/>
@@ -349,7 +406,8 @@
 							{#if isEditing}
 								<Input
 									id="slug"
-									bind:value={slugValue}
+									value={slugValue}
+									oninput={handleSlugChange}
 									placeholder="organization-slug"
 									disabled={isSaving}
 								/>
