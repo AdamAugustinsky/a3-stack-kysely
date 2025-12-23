@@ -19,7 +19,7 @@
 	import CreateOrganizationDialog from './create-organization-dialog.svelte';
 	import CommandPalette from './command-palette.svelte';
 	import SearchIcon2 from '@lucide/svelte/icons/search';
-	import Kbd from '$lib/components/kbd.svelte';
+	import * as Kbd from '$lib/components/ui/kbd/index.js';
 	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
 	import { page } from '$app/state';
 	import { listOrganizations } from '$lib/remote/organization.remote';
@@ -191,8 +191,8 @@
 							<SearchIcon2 class="size-4" />
 							<span class="flex-1 text-left">Search...</span>
 							<div class="ml-auto flex gap-0.5">
-								<Kbd content={isMac ? '⌘' : 'Ctrl'} />
-								<Kbd content="K" />
+								<Kbd.Root>{isMac ? '⌘' : 'Ctrl'}</Kbd.Root>
+								<Kbd.Root>K</Kbd.Root>
 							</div>
 						</Sidebar.MenuButton>
 					</Sidebar.MenuItem>

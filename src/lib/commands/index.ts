@@ -588,18 +588,6 @@ export function getOrganizationSettingsCommands(context: CommandContext): Comman
 			visibility: {
 				routePatterns: [/\/organization\/[^/]+\/organization/]
 			}
-		},
-		{
-			id: 'org-billing',
-			label: 'Manage Billing',
-			icon: CreditCard,
-			action: () => navigateToInActiveOrg('/organization/billing'),
-			keywords: ['billing', 'payment', 'subscription', 'invoice'],
-			category: 'page-specific',
-			priority: 3,
-			visibility: {
-				routePatterns: [/\/organization\/[^/]+\/organization/]
-			}
 		}
 	];
 }

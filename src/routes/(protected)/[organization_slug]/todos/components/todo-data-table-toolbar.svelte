@@ -6,7 +6,7 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { priorities, statuses, labels } from './data.js';
 	import { onMount } from 'svelte';
-	import Kbd from '$lib/components/kbd.svelte';
+	import * as Kbd from '$lib/components/ui/kbd/index.js';
 	import type { FilterStore } from '$lib/components/filter/filter-store.svelte';
 	import type { FilterConfig } from '@/utils/filter';
 	import FilterBuilder from '$lib/components/filter/filter-builder.svelte';
@@ -166,7 +166,7 @@
 					class="h-8 w-[150px] pr-8 lg:w-[250px]"
 				/>
 				{#if !inputFocused && !getTextFilterValue().length}
-					<Kbd content="/" class="absolute top-1/2 right-1.5 -translate-y-1/2" aria-hidden="true" />
+					<Kbd.Root class="absolute top-1/2 right-1.5 -translate-y-1/2" aria-hidden="true">/</Kbd.Root>
 				{/if}
 			</div>
 

@@ -4,7 +4,7 @@
 	import CreateTodoDialog from './components/create-todo-dialog.svelte';
 	import BulkOperationsDock from './components/bulk-operations-dock.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import Kbd from '$lib/components/kbd.svelte';
+	import * as Kbd from '$lib/components/ui/kbd/index.js';
 	import CirclePlusIcon from '@lucide/svelte/icons/circle-plus';
 	import type { Task } from '$lib/schemas/todo';
 	import { getTodos, deleteTodo, bulkUpdateTodos, bulkDeleteTodos } from '$lib/remote/todo.remote';
@@ -176,7 +176,7 @@
 		<Button onclick={handleOpenCreateDialog} variant="default" class="group">
 			<CirclePlusIcon class="mr-2 h-4 w-4" />
 			Add Task
-			<Kbd content="C" variant="onPrimary" class="ml-1.5" />
+			<Kbd.Root class="ml-1.5 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">C</Kbd.Root>
 		</Button>
 	</div>
 	{#if todosQuery.loading}

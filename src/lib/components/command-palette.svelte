@@ -5,7 +5,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { CornerDownLeft, ArrowRight } from '@lucide/svelte';
 	import { useIsMac } from '$lib/hooks/use-is-mac.svelte.js';
-	import Kbd from '$lib/components/kbd.svelte';
+	import * as Kbd from '$lib/components/ui/kbd/index.js';
 	import {
 		type CommandContext,
 		type CommandItem,
@@ -382,7 +382,7 @@
 			class="absolute inset-x-0 bottom-0 z-20 flex h-10 items-center gap-2 rounded-b-xl border-t border-t-neutral-100 bg-neutral-50 px-4 text-xs font-medium text-muted-foreground dark:border-t-neutral-700 dark:bg-neutral-800"
 		>
 			<div class="flex items-center gap-2">
-				<Kbd content={CornerDownLeft} />
+				<Kbd.Root><CornerDownLeft class="size-3" /></Kbd.Root>
 				{#if footerActionText}
 					{footerActionText}
 				{:else}
@@ -391,8 +391,8 @@
 			</div>
 			<Separator orientation="vertical" class="!h-4" />
 			<div class="flex items-center gap-1">
-				<Kbd content={isMac ? '⌘' : 'Ctrl'} />
-				<Kbd content="K" class="aspect-square" />
+				<Kbd.Root>{isMac ? '⌘' : 'Ctrl'}</Kbd.Root>
+				<Kbd.Root class="aspect-square">K</Kbd.Root>
 				Command Palette
 			</div>
 			{#if highlightedCommand?.shortcut}
