@@ -44,8 +44,8 @@
 	});
 
 	const chartConfig = {
-		completed: { label: 'Completed', color: 'var(--primary)' },
-		inProgress: { label: 'In Progress', color: 'var(--primary)' }
+		completed: { label: 'Completed', color: 'var(--chart-1)' },
+		inProgress: { label: 'In Progress', color: 'var(--chart-2)' }
 	} satisfies Chart.ChartConfig;
 </script>
 

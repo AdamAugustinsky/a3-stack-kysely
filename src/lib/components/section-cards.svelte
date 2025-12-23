@@ -40,7 +40,8 @@
 	</div>
 {:else}
 	<div class="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-		<Card.Root class="@container/card gap-4 py-4 shadow-xs">
+		<Card.Root class="@container/card relative gap-4 py-4 shadow-xs">
+			<div class="absolute left-5 right-5 top-0 h-px rounded-full bg-sky-500/35"></div>
 			<Card.Header class="px-5">
 				<Card.Description class="text-xs">Total tasks</Card.Description>
 				<Card.Title class="text-2xl font-semibold tabular-nums">
@@ -58,7 +59,8 @@
 			</Card.Content>
 		</Card.Root>
 
-		<Card.Root class="@container/card gap-4 py-4 shadow-xs">
+		<Card.Root class="@container/card relative gap-4 py-4 shadow-xs">
+			<div class="absolute left-5 right-5 top-0 h-px rounded-full bg-emerald-500/35"></div>
 			<Card.Header class="px-5">
 				<Card.Description class="text-xs">Completed</Card.Description>
 				<Card.Title class="text-2xl font-semibold tabular-nums">
@@ -76,7 +78,8 @@
 			</Card.Content>
 		</Card.Root>
 
-		<Card.Root class="@container/card gap-4 py-4 shadow-xs">
+		<Card.Root class="@container/card relative gap-4 py-4 shadow-xs">
+			<div class="absolute left-5 right-5 top-0 h-px rounded-full bg-violet-500/35"></div>
 			<Card.Header class="px-5">
 				<Card.Description class="text-xs">In progress</Card.Description>
 				<Card.Title class="text-2xl font-semibold tabular-nums">
@@ -94,7 +97,8 @@
 			</Card.Content>
 		</Card.Root>
 
-		<Card.Root class="@container/card gap-4 py-4 shadow-xs">
+		<Card.Root class="@container/card relative gap-4 py-4 shadow-xs">
+			<div class="absolute left-5 right-5 top-0 h-px rounded-full bg-amber-500/40"></div>
 			<Card.Header class="px-5">
 				<Card.Description class="text-xs">High priority</Card.Description>
 				<Card.Title class="text-2xl font-semibold tabular-nums">

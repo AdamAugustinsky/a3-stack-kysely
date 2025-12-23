@@ -11,6 +11,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
+	import { toast } from 'svelte-sonner';
 	import {
 		Table,
 		TableBody,
@@ -30,8 +31,7 @@
 	import TrashIcon from '@tabler/icons-svelte/icons/trash';
 	import SendIcon from '@tabler/icons-svelte/icons/send';
 	import XIcon from '@tabler/icons-svelte/icons/x';
-	import AlertCircleIcon from '@tabler/icons-svelte/icons/alert-circle';
-	import CheckIcon from '@tabler/icons-svelte/icons/check';
+
 	import CrownIcon from '@tabler/icons-svelte/icons/crown';
 	import UserPlusIcon from '@tabler/icons-svelte/icons/user-plus';
 	import {
@@ -92,7 +92,6 @@
 	}
 
 	// UI state
-	let alert: { type: 'success' | 'error'; message: string } | undefined = $state();
 	let showInviteDialog = $state(false);
 	let showDeleteDialog = $state(false);
 
@@ -125,12 +124,9 @@
 	function copy(text: string) {
 		try {
 			navigator.clipboard?.writeText(text);
-			alert = { type: 'success', message: 'Copied to clipboard.' };
-			setTimeout(() => {
-				if (alert?.message === 'Copied to clipboard.') alert = undefined;
-			}, 1500);
+			toast.success('Copied to clipboard.');
 		} catch {
-			alert = { type: 'error', message: 'Failed to copy.' };
+			toast.error('Failed to copy.');
 		}
 	}
 
@@ -139,7 +135,6 @@
 		if (!activeOrganization) return;
 
 		isSaving = true;
-		alert = undefined;
 
 		const oldSlug = activeOrganization.slug;
 		const newSlug = slugValue;
@@ -154,7 +149,7 @@
 				}
 			});
 
-			alert = { type: 'success', message: 'Organization details updated successfully.' };
+			toast.success('Organization details updated successfully.');
 			isEditing = false;
 			slugManuallyEdited = false;
 
@@ -169,7 +164,7 @@
 				await invalidateAll();
 			}
 		} catch (error) {
-			alert = { type: 'error', message: 'Failed to update organization details.' };
+			toast.error('Failed to update organization details.');
 			console.error('Failed to save organization:', error);
 		} finally {
 			isSaving = false;
@@ -184,7 +179,6 @@
 		logoValue = activeOrganization.logo || '';
 		isEditing = false;
 		slugManuallyEdited = false;
-		alert = undefined;
 	}
 
 	// Send invitation
@@ -202,10 +196,10 @@
 			showInviteDialog = false;
 			inviteEmail = '';
 			inviteRole = 'member';
-			alert = { type: 'success', message: 'Invitation sent successfully.' };
+			toast.success('Invitation sent successfully.');
 			await invalidateAll();
 		} catch (error) {
-			alert = { type: 'error', message: 'Failed to send invitation.' };
+			toast.error('Failed to send invitation.');
 			console.error('Failed to send invitation:', error);
 		} finally {
 			isInviting = false;
@@ -216,10 +210,10 @@
 	async function handleCancelInvitation(invitationId: string) {
 		try {
 			await cancelInvitation({ invitationId });
-			alert = { type: 'success', message: 'Invitation cancelled.' };
+			toast.success('Invitation cancelled.');
 			await invalidateAll();
 		} catch (error) {
-			alert = { type: 'error', message: 'Failed to cancel invitation.' };
+			toast.error('Failed to cancel invitation.');
 			console.error('Failed to cancel invitation:', error);
 		}
 	}
@@ -234,10 +228,10 @@
 				role: newRole,
 				organizationId: activeOrganization.id
 			});
-			alert = { type: 'success', message: 'Member role updated.' };
+			toast.success('Member role updated.');
 			await invalidateAll();
 		} catch (error) {
-			alert = { type: 'error', message: 'Failed to update member role.' };
+			toast.error('Failed to update member role.');
 			console.error('Failed to update member role:', error);
 		}
 	}
@@ -251,10 +245,10 @@
 				memberIdOrEmail: userEmail,
 				organizationId: activeOrganization.id
 			});
-			alert = { type: 'success', message: 'Member removed from organization.' };
+			toast.success('Member removed from organization.');
 			await invalidateAll();
 		} catch (error) {
-			alert = { type: 'error', message: 'Failed to remove member.' };
+			toast.error('Failed to remove member.');
 			console.error('Failed to remove member:', error);
 		}
 	}
@@ -274,7 +268,7 @@
 
 			goto('/sign-in');
 		} catch (error) {
-			alert = { type: 'error', message: 'Failed to delete organization.' };
+			toast.error('Failed to delete organization.');
 			console.error('Failed to delete organization:', error);
 		}
 	}
@@ -301,16 +295,16 @@
 	<title>Organization Settings</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-5xl p-5">
-	<!-- Page Header -->
-	<div class="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-		<div>
-			<h1 class="text-3xl font-bold tracking-tight">Organization Settings</h1>
+<div class="@container/main hidden h-full flex-1 flex-col gap-8 p-8 md:flex">
+	<div class="flex items-center justify-between gap-3">
+		<div class="flex flex-col gap-1">
+			<h2 class="text-2xl font-semibold tracking-tight">Organization</h2>
 			<p class="text-muted-foreground">Manage your organization, members, and permissions.</p>
 		</div>
 		{#if isAdmin && !isEditing}
 			<Button
 				variant="outline"
+				size="sm"
 				onclick={() => {
 					if (activeOrganization) {
 						nameValue = activeOrganization.name;
@@ -322,32 +316,16 @@
 				}}
 			>
 				<BuildingIcon class="mr-2 size-4 shrink-0" />
-				<span class="truncate">Edit Organization</span>
+				<span class="truncate">Edit organization</span>
 			</Button>
 		{/if}
 	</div>
 
-	<!-- Inline Alerts -->
-	{#if alert}
-		<div
-			class="mb-4 flex items-start gap-2 rounded-md border p-3 {alert.type === 'error'
-				? 'border-red-200 bg-red-50 text-red-700'
-				: 'border-green-200 bg-green-50 text-green-700'}"
-		>
-			{#if alert.type === 'error'}
-				<AlertCircleIcon class="mt-0.5 size-4" />
-			{:else}
-				<CheckIcon class="mt-0.5 size-4" />
-			{/if}
-			<p class="text-sm">{alert.message}</p>
-		</div>
-	{/if}
-
 	{#if activeOrganization}
-		<div class="grid grid-cols-1 gap-5 md:grid-cols-3">
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<!-- Left: Organization Details -->
-			<Card class="md:col-span-2">
-				<CardHeader class="pb-1">
+			<Card class="gap-4 py-4 shadow-xs md:col-span-2">
+				<CardHeader class="px-5 pb-0">
 					<div class="flex items-center gap-4">
 						<Avatar class="size-16 shrink-0 sm:size-20">
 							{#if activeOrganization.logo}
@@ -361,11 +339,9 @@
 							</AvatarFallback>
 						</Avatar>
 						<div class="min-w-0 space-y-1">
-							<CardTitle class="truncate text-xl sm:text-2xl"
-								>{activeOrganization.name}</CardTitle
-							>
+							<CardTitle class="truncate text-lg font-semibold">{activeOrganization.name}</CardTitle>
 							{#if activeOrganization.slug}
-								<CardDescription class="truncate text-sm sm:text-base">
+								<CardDescription class="truncate font-mono text-sm text-muted-foreground">
 									/{activeOrganization.slug}
 								</CardDescription>
 							{/if}
@@ -373,7 +349,7 @@
 					</div>
 				</CardHeader>
 
-				<CardContent class="space-y-4">
+				<CardContent class="space-y-4 px-5">
 					<Separator />
 					<div class="space-y-1">
 						<h3 class="text-lg font-medium">Organization Details</h3>
@@ -448,10 +424,10 @@
 						<!-- Action Buttons (only show when editing) -->
 						{#if isEditing}
 							<div class="flex flex-col gap-2 pt-2 sm:flex-row">
-								<Button onclick={handleSaveDetails} disabled={isSaving}>
-									{isSaving ? 'Saving...' : 'Save Changes'}
+								<Button size="sm" onclick={handleSaveDetails} disabled={isSaving}>
+									{isSaving ? 'Saving…' : 'Save changes'}
 								</Button>
-								<Button variant="outline" onclick={handleCancelEdit} disabled={isSaving}>
+								<Button size="sm" variant="outline" onclick={handleCancelEdit} disabled={isSaving}>
 									Cancel
 								</Button>
 							</div>
@@ -461,13 +437,13 @@
 			</Card>
 
 			<!-- Right: Meta and Actions -->
-			<div class="space-y-5">
-				<Card>
-					<CardHeader class="pb-1">
+			<div class="space-y-6">
+				<Card class="gap-4 py-4 shadow-xs">
+					<CardHeader class="px-5 pb-0">
 						<CardTitle>Organization Info</CardTitle>
 						<CardDescription>Identifiers and metadata.</CardDescription>
 					</CardHeader>
-					<CardContent class="space-y-2">
+					<CardContent class="space-y-2 px-5">
 						<div class="flex items-center justify-between gap-3 py-1">
 							<div class="flex min-w-0 items-center space-x-2">
 								<CalendarIcon class="size-4 shrink-0 text-muted-foreground" />
@@ -490,7 +466,7 @@
 								<Button
 									size="sm"
 									variant="outline"
-									class="h-7 shrink-0"
+									class="shrink-0"
 									onclick={() => copy(activeOrganization?.id ?? '')}
 								>
 									Copy
@@ -523,12 +499,12 @@
 				</Card>
 
 				{#if isOwner}
-					<Card class="border-destructive">
-						<CardHeader class="pb-1">
+					<Card class="gap-4 py-4 shadow-xs border-destructive">
+						<CardHeader class="px-5 pb-0">
 							<CardTitle class="text-destructive">Danger Zone</CardTitle>
 							<CardDescription>Irreversible and destructive actions.</CardDescription>
 						</CardHeader>
-						<CardContent>
+						<CardContent class="px-5">
 							<div class="space-y-4">
 								<div class="flex items-center justify-between">
 									<div class="space-y-1">
@@ -537,9 +513,9 @@
 											Permanently delete this organization and all data.
 										</p>
 									</div>
-									<Button variant="destructive" onclick={() => (showDeleteDialog = true)}>
-										Delete
-									</Button>
+										<Button size="sm" variant="destructive" onclick={() => (showDeleteDialog = true)}>
+											Delete
+										</Button>
 								</div>
 							</div>
 						</CardContent>
@@ -549,15 +525,15 @@
 		</div>
 
 		<!-- Members Section -->
-		<Card class="mt-5">
-			<CardHeader class="pb-1">
+		<Card class="gap-4 py-4 shadow-xs">
+			<CardHeader class="px-5 pb-0">
 				<div class="flex items-center justify-between">
 					<div>
 						<CardTitle>Members</CardTitle>
 						<CardDescription>Manage organization members and their roles.</CardDescription>
 					</div>
 					{#if isAdmin}
-						<Button onclick={() => (showInviteDialog = true)}>
+						<Button size="sm" onclick={() => (showInviteDialog = true)}>
 							<UserPlusIcon class="mr-2 size-4" />
 							Invite Member
 						</Button>
@@ -651,12 +627,12 @@
 
 		<!-- Invitations Section -->
 		{#if activeOrganization && activeOrganization.invitations.length > 0}
-			<Card class="mt-5">
-				<CardHeader class="pb-1">
-					<CardTitle>Pending Invitations</CardTitle>
+			<Card class="gap-4 py-4 shadow-xs">
+				<CardHeader class="px-5 pb-0">
+					<CardTitle>Pending invitations</CardTitle>
 					<CardDescription>Manage pending member invitations.</CardDescription>
 				</CardHeader>
-				<CardContent>
+				<CardContent class="px-5">
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -708,17 +684,17 @@
 
 <!-- Invite Member Dialog -->
 <Dialog.Root bind:open={showInviteDialog}>
-	<Dialog.Content class="sm:max-w-106.25">
-		<Dialog.Header>
-			<Dialog.Title>Invite Member</Dialog.Title>
-			<Dialog.Description>
-				Send an invitation to add a new member to your organization.
+	<Dialog.Content class="gap-0 p-0 sm:max-w-md">
+		<Dialog.Header class="border-b px-5 py-3.5">
+			<Dialog.Title class="text-base font-semibold">Invite member</Dialog.Title>
+			<Dialog.Description class="text-sm text-muted-foreground">
+				Send an invitation to add someone to your organization.
 			</Dialog.Description>
 		</Dialog.Header>
 
-		<div class="grid gap-4 py-4">
+		<div class="space-y-3.5 px-5 py-4">
 			<div class="grid gap-2">
-				<Label for="email">Email Address</Label>
+				<Label for="email">Email</Label>
 				<Input
 					id="email"
 					type="email"
@@ -745,16 +721,16 @@
 			</div>
 		</div>
 
-		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (showInviteDialog = false)} disabled={isInviting}>
+		<Dialog.Footer class="border-t bg-muted/30 px-5 py-3">
+			<Button size="sm" variant="ghost" onclick={() => (showInviteDialog = false)} disabled={isInviting}>
 				Cancel
 			</Button>
-			<Button onclick={handleSendInvitation} disabled={isInviting || !inviteEmail}>
+			<Button size="sm" onclick={handleSendInvitation} disabled={isInviting || !inviteEmail}>
 				{#if isInviting}
 					Sending...
 				{:else}
 					<SendIcon class="mr-2 size-4" />
-					Send Invitation
+					Send invitation
 				{/if}
 			</Button>
 		</Dialog.Footer>
