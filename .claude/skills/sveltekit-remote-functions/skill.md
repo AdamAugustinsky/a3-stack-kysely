@@ -87,32 +87,37 @@ The query returned from `getPosts` works as a [`Promise`](https://developer.mozi
 
 Until the promise resolves — and if it errors — the nearest [`<svelte:boundary>`](../svelte/svelte-boundary) will be invoked.
 
-While using `await` is recommended, as an alternative the query also has `loading`, `error` and `current` properties:
+> [!WARNING] The `.loading/.error/.current` pattern is **deprecated** in this project. Always use `<svelte:boundary>` with `await` instead. The boundary pattern provides cleaner code, built-in retry, and automatic error handling.
 
-```svelte
+````svelte
 <!--- file: src/routes/blog/+page.svelte --->
 <script>
 	import { getPosts } from './data.remote';
-
-	const query = getPosts();
+	import { Button } from '$lib/components/ui/button/index.js';
 </script>
 
+{#snippet PostsList()}
+	<svelte:boundary onerror={(e) => console.error('Posts fetch failed:', e)}>
+		{@const posts = await getPosts()}
+
+		<ul>
+			{#each posts as { title, slug }}
+				<li><a href="/blog/{slug}">{title}</a></li>
+			{/each}
+		</ul>
+
+		{#snippet pending()}
+			<p>Loading...</p>
+		{/snippet}
+
+		{#snippet failed(error, reset)}
+			<p>Oops! <Button onclick={reset}>Retry</Button></p>
+		{/snippet}
+	</svelte:boundary>
+{/snippet}
+
 <h1>Recent posts</h1>
-
-{#if query.error}
-	<p>oops!</p>
-{:else if query.loading}
-	<p>loading...</p>
-{:else}
-	<ul>
-		{#each query.current as { title, slug }}
-			<li><a href="/blog/{slug}">{title}</a></li>
-		{/each}
-	</ul>
-{/if}
-```
-
-> [!NOTE] For the rest of this document, we'll use the `await` form.
+{@render PostsList()}
 
 ### Query arguments
 
@@ -130,7 +135,7 @@ Query functions can accept an argument, such as the `slug` of an individual post
 
 <h1>{post.title}</h1>
 <div>{@html post.content}</div>
-```
+````
 
 Since `getPost` exposes an HTTP endpoint, it's important to validate this argument to be sure that it's the correct type. For this, we can use any [Standard Schema](https://standardschema.dev/) validation library such as [Zod](https://zod.dev/) or [Valibot](https://valibot.dev/):
 
@@ -256,14 +261,18 @@ import { query, form } from '$app/server';
 import * as db from '$lib/server/database';
 import * as auth from '$lib/server/auth';
 
-export const getPosts = query(async () => { /* ... */ });
+export const getPosts = query(async () => {
+	/* ... */
+});
 
-export const getPost = query(v.string(), async (slug) => { /* ... */ });
+export const getPost = query(v.string(), async (slug) => {
+	/* ... */
+});
 
 export const createPost = form(
 	v.object({
 		title: v.pipe(v.string(), v.nonEmpty()),
-		content:v.pipe(v.string(), v.nonEmpty())
+		content: v.pipe(v.string(), v.nonEmpty())
 	}),
 	async ({ title, content }) => {
 		// Check the user is logged in
@@ -301,7 +310,7 @@ export const createPost = form(
 </form>
 ```
 
-The form object contains `method` and `action` properties that allow it to work without JavaScript (i.e. it submits data and reloads the page). It also has an [attachment](/docs/svelte/@attach) that progressively enhances the form when JavaScript is available, submitting data *without* reloading the entire page.
+The form object contains `method` and `action` properties that allow it to work without JavaScript (i.e. it submits data and reloads the page). It also has an [attachment](/docs/svelte/@attach) that progressively enhances the form when JavaScript is available, submitting data _without_ reloading the entire page.
 
 As with `query`, if the callback uses the submitted `data`, it should be [validated](#query-Query-arguments) by passing a [Standard Schema](https://standardschema.dev) as the first argument to `form`.
 
@@ -346,7 +355,9 @@ const datingProfile = v.object({
 	attributes: v.array(v.string())
 });
 
-export const createProfile = form(datingProfile, (data) => { /* ... */ });
+export const createProfile = form(datingProfile, (data) => {
+	/* ... */
+});
 ```
 
 ...your form could look like this:
@@ -400,7 +411,9 @@ export const survey = form(
 		operatingSystem: v.picklist(['windows', 'mac', 'linux']),
 		languages: v.optional(v.array(v.picklist(['html', 'css', 'js'])), [])
 	}),
-	(data) => { /* ... */ }
+	(data) => {
+		/* ... */
+	}
 );
 ```
 
@@ -467,19 +480,14 @@ import * as db from '$lib/server/database';
 
 export const buyHotcakes = form(
 	v.object({
-		qty: v.pipe(
-			v.number(),
-			v.minValue(1, 'you must buy at least one hotcake')
-		)
+		qty: v.pipe(v.number(), v.minValue(1, 'you must buy at least one hotcake'))
 	}),
 	async (data, issue) => {
 		try {
 			await db.buy(data.qty);
 		} catch (e) {
 			if (e.code === 'OUT_OF_STOCK') {
-				invalid(
-					issue.qty(`we don't have enough hotcakes`)
-				);
+				invalid(issue.qty(`we don't have enough hotcakes`));
 			}
 		}
 	}
@@ -697,13 +705,19 @@ import { query, form } from '$app/server';
 import * as db from '$lib/server/database';
 import * as auth from '$lib/server/auth';
 
-export const getPosts = query(async () => { /* ... */ });
+export const getPosts = query(async () => {
+	/* ... */
+});
 
-export const getPost = query(v.string(), async (slug) => { /* ... */ });
+export const getPost = query(v.string(), async (slug) => {
+	/* ... */
+});
 
 // ---cut---
 export const createPost = form(
-	v.object({/* ... */}),
+	v.object({
+		/* ... */
+	}),
 	async (data) => {
 		// ...
 
@@ -773,7 +787,7 @@ import type { RemoteQuery, RemoteQueryOverride } from '@sveltejs/kit';
 interface Post {}
 declare function submit(): Promise<any> & {
 	updates(...queries: Array<RemoteQuery<any> | RemoteQueryOverride>): Promise<any>;
-}
+};
 
 declare function getPosts(): RemoteQuery<Post[]>;
 // ---cut---
@@ -787,14 +801,12 @@ import type { RemoteQuery, RemoteQueryOverride } from '@sveltejs/kit';
 interface Post {}
 declare function submit(): Promise<any> & {
 	updates(...queries: Array<RemoteQuery<any> | RemoteQueryOverride>): Promise<any>;
-}
+};
 
 declare function getPosts(): RemoteQuery<Post[]>;
 declare const newPost: Post;
 // ---cut---
-await submit().updates(
-	getPosts().withOverride((posts) => [newPost, ...posts])
-);
+await submit().updates(getPosts().withOverride((posts) => [newPost, ...posts]));
 ```
 
 The override will be applied immediately, and released when the submission completes (or fails).
@@ -1066,13 +1078,11 @@ import { prerender } from '$app/server';
 
 export const getPost = prerender(
 	v.string(),
-	async (slug) => { /* ... */ },
+	async (slug) => {
+		/* ... */
+	},
 	{
-		inputs: () => [
-			'first-post',
-			'second-post',
-			'third-post'
-		]
+		inputs: () => ['first-post', 'second-post', 'third-post']
 	}
 );
 ```
@@ -1166,4 +1176,4 @@ Note that some properties of `RequestEvent` are different inside remote function
 
 ## Redirects
 
-Inside `query`, `form` and `prerender` functions it is possible to use the [`redirect(...)`](@sveltejs-kit#redirect) function. It is *not* possible inside `command` functions, as you should avoid redirecting here. (If you absolutely have to, you can return a `{ redirect: location }` object and deal with it in the client.)
+Inside `query`, `form` and `prerender` functions it is possible to use the [`redirect(...)`](@sveltejs-kit#redirect) function. It is _not_ possible inside `command` functions, as you should avoid redirecting here. (If you absolutely have to, you can return a `{ redirect: location }` object and deal with it in the client.)

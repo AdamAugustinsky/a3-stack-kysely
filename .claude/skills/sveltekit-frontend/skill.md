@@ -17,7 +17,7 @@ This skill covers SvelteKit 5 with remote functions, shadcn/ui, and TailwindCSS 
 - **Better Auth** for authentication
 - **shadcn/ui for Svelte** components at `$lib/components/ui`
 - **TailwindCSS v4**
-- **Lucide icons**
+- **Lucide icons** and **Tabler icons**
 
 ## Svelte 5 Reactivity
 
@@ -25,10 +25,10 @@ This skill covers SvelteKit 5 with remote functions, shadcn/ui, and TailwindCSS 
 <script>
   // State
   let count = $state(0);
-  
+
   // Derived (simple expressions only)
   let doubled = $derived(count * 2);
-  
+
   // Derived with complex logic
   let formatted = $derived.by(() => {
     if (count > 10) return 'High';
@@ -37,74 +37,119 @@ This skill covers SvelteKit 5 with remote functions, shadcn/ui, and TailwindCSS 
 </script>
 ```
 
-## Data Loading with Remote Functions
+## Data Loading with svelte:boundary (PREFERRED)
 
-**Always use `await` with queries and wrap in `<svelte:boundary>`.**
+**Always use `<svelte:boundary>` with `{@const data = await ...}` for data loading.**
 
-### Content Component (items-content.svelte)
+This pattern provides:
+
+- Declarative loading/error states via snippets
+- Automatic retry capability via `reset` function
+- Clean separation of loading, error, and success states
+- No manual state management
+
+### Basic Pattern
 
 ```svelte
-<script>
-  import { getItems } from './items.remote';
+<script lang="ts">
+  import { getItems } from '$lib/remote/items.remote';
+  import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+  import { Button } from '$lib/components/ui/button/index.js';
+  import AlertCircleIcon from '@tabler/icons-svelte/icons/alert-circle';
   import { page } from '$app/state';
 
-  // Use $derived only when query depends on reactive state
-  let { items } = $derived(await getItems({
-    organizationSlug: page.params.organization_slug ?? '',
-    filters: filterStore.filters  // reactive dependency
-  }));
-
-  // If no reactive deps, just use await directly
-  // let { items } = await getItems({ organizationSlug: page.params.organization_slug ?? '' });
-
-  let searchTerm = $state('');
-  const filtered = $derived(items.filter(i => i.name.includes(searchTerm)));
+  // Reactive query params
+  const queryParams = $derived({
+    organizationSlug: page.params.organization_slug!,
+    filters: filterStore.toArray()
+  });
 </script>
+
+{#snippet ItemsSkeleton()}
+  <div class="space-y-2">
+    {#each Array(5) as _, i (i)}
+      <Skeleton class="h-12 w-full" />
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet ItemsList()}
+  <svelte:boundary onerror={(e) => console.error('Items fetch failed:', e)}>
+    {@const items = await getItems(queryParams)}
+
+    {#if items.length > 0}
+      {#each items as item (item.id)}
+        <ItemCard {item} />
+      {/each}
+    {:else}
+      <EmptyState message="No items yet" />
+    {/if}
+
+    {#snippet pending()}
+      {@render ItemsSkeleton()}
+    {/snippet}
+
+    {#snippet failed(error, reset)}
+      <div class="flex flex-col items-center py-8">
+        <AlertCircleIcon class="h-12 w-12 text-destructive/50" />
+        <p class="mt-4 font-medium text-destructive">Failed to load items</p>
+        <Button variant="outline" size="sm" onclick={reset} class="mt-4">
+          Try again
+        </Button>
+      </div>
+    {/snippet}
+  </svelte:boundary>
+{/snippet}
+
+{@render ItemsList()}
 ```
 
-### Page with Boundary (+page.svelte)
+### With Derived Data Transformations
+
+Use `{@const}` for any data transformations inside the boundary:
+
+```svelte
+{#snippet ChartData()}
+  <svelte:boundary onerror={(e) => console.error('Chart fetch failed:', e)}>
+    {@const rawData = await getActivityData()}
+    {@const filteredData = rawData.slice(-daysToShow).map(normalize)}
+    {@const totalCount = filteredData.reduce((sum, d) => sum + d.count, 0)}
+
+    <ChartHeader count={totalCount} />
+    <Chart data={filteredData} />
+
+    {#snippet pending()}...{/snippet}
+    {#snippet failed(error, reset)}...{/snippet}
+  </svelte:boundary>
+{/snippet}
+```
+
+### Reactivity with Boundary
+
+When `queryParams` is `$derived`, the boundary automatically re-executes when dependencies change:
 
 ```svelte
 <script>
-  import ItemsContent from './items-content.svelte';
-  import Loader2Icon from '@lucide/svelte/icons/loader-2';
+  const queryParams = $derived({
+    organizationSlug: page.params.organization_slug!,
+    filters: filterStore.toArray()  // When filters change, boundary re-fetches
+  });
 </script>
 
-<svelte:boundary>
-  <ItemsContent />
-
-  {#snippet pending()}
-    <div class="py-8 text-center">
-      <Loader2Icon class="size-8 animate-spin" />
-    </div>
-  {/snippet}
-
-  {#snippet failed(error, reset)}
-    <div class="text-destructive">
-      {error instanceof Error ? error.message : 'Error'}
-      <button onclick={reset}>Retry</button>
-    </div>
-  {/snippet}
-</svelte:boundary>
+{#snippet DataList()}
+  <svelte:boundary>
+    {@const data = await fetchData(queryParams)}
+    <!-- Automatically updates when queryParams changes -->
+  </svelte:boundary>
+{/snippet}
 ```
 
 ## Using Remote Functions (Frontend)
 
-### Calling Queries
-
-```svelte
-<script>
-  import { getItems } from './items.remote';
-  
-  // Simple call
-  let items = await getItems();
-  
-  // With reactive argument - use $derived
-  let { data } = $derived(await getItems({ slug: page.params.slug }));
-</script>
-```
-
 ### Refreshing Queries
+
+After mutations, queries are automatically refreshed if called with `.refresh()` in the remote function.
+You can also manually refresh:
 
 ```svelte
 <button onclick={() => getItems().refresh()}>
@@ -113,23 +158,17 @@ This skill covers SvelteKit 5 with remote functions, shadcn/ui, and TailwindCSS 
 ```
 
 ### Using Forms
-Forms are the primary way of action in the SvelteKit philosophy (web native) 
+
+Forms are the primary way of action in the SvelteKit philosophy (web native):
 
 ```svelte
 <script>
   import { createItem } from './items.remote';
   import { toast } from 'svelte-sonner';
-  
+
   let submitting = $state(false);
 </script>
 
-<!-- Basic form spread -->
-<form {...createItem}>
-  <input {...createItem.fields.title.as('text')} />
-  <button>Create</button>
-</form>
-
-<!-- Enhanced form with callbacks -->
 <form {...createItem.enhance(async ({ submit, form }) => {
   submitting = true;
   try {
@@ -162,13 +201,13 @@ Forms are the primary way of action in the SvelteKit philosophy (web native)
 
 ```svelte
 <script>
-  import { deleteItem, getItems } from './items.remote';
+  import { deleteItem } from './items.remote';
   import { toast } from 'svelte-sonner';
 </script>
 
 <button onclick={async () => {
   try {
-    await deleteItem(item.id).updates(getItems());
+    await deleteItem({ id: item.id });
     toast.success('Deleted');
   } catch (e) {
     toast.error('Failed');
@@ -198,7 +237,7 @@ Reuse form UI between create and edit modes:
   {#if item}
     <input type="hidden" name="itemId" value={item.id} />
   {/if}
-  
+
   <Input name="title" value={item?.title ?? ''} />
   {#if formObj.issues?.title}
     {#each formObj.issues.title as issue}
@@ -207,7 +246,6 @@ Reuse form UI between create and edit modes:
   {/if}
 {/snippet}
 
-<!-- Create Form -->
 <form {...createItemForm.enhance(async ({ submit }) => {
   submitting = true;
   try {
@@ -242,6 +280,7 @@ Reuse form UI between create and edit modes:
 ### Dividers vs Cards
 
 **Dividers** for sequential/grouped content:
+
 ```svelte
 <div class="divide-y divide-border/40">
   {#each items as item}
@@ -262,6 +301,7 @@ Reuse form UI between create and edit modes:
 ### Keyboard Shortcuts
 
 Use `Kbd` component for hints:
+
 ```svelte
 <Kbd content="/" />
 <Kbd content="C" variant="onPrimary" />
@@ -277,7 +317,29 @@ Add shortcuts for: `/` (search), `C` (create), `CMD+K` (command palette).
 
 ## Anti-Patterns
 
-- Using `.loading/.error/.current` pattern for queries that are very fast (causes flickering)
+**NEVER use the old `.loading/.error/.current` pattern:**
+
+```svelte
+// ❌ DEPRECATED - Don't do this
+const query = getItems();
+{#if query.loading}...{:else if query.error}...{:else}...{/if}
+```
+
+**Always use `<svelte:boundary>` with `{@const}` instead:**
+
+```svelte
+// ✅ PREFERRED
+<svelte:boundary>
+  {@const items = await getItems()}
+  <!-- render items -->
+  {#snippet pending()}...{/snippet}
+  {#snippet failed(error, reset)}...{/snippet}
+</svelte:boundary>
+```
+
+Other anti-patterns:
+
 - Separate create/edit form UIs (use snippets)
 - Missing keys in `{#each}` blocks
 - Forgetting `.refresh()` or `.updates()` after mutations
+- State mutations inside boundary template (causes `state_unsafe_mutation` error)

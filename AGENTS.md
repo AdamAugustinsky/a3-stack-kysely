@@ -39,7 +39,7 @@ bun run <script>     # Run package.json scripts
 
 - No `any` or `ts-expect-error`. Use precise union types.
 - Use `Record<Union, T>` for constant maps.
-- Derive types from Queries in @packages/db/src/queries/* and generated DB types in @packages/db/src/usertypes.ts.
+- Derive types from Queries in @packages/db/src/queries/\* and generated DB types in @packages/db/src/usertypes.ts.
 
 ### Data Integrity
 
@@ -64,12 +64,33 @@ bun run <script>     # Run package.json scripts
 ## Testing
 
 ```typescript
-import { test, expect } from "bun:test";
+import { test, expect } from 'bun:test';
 
-test("description", () => {
-  expect(result).toBe(expected);
+test('description', () => {
+	expect(result).toBe(expected);
 });
 ```
+
+## Svelte 5 Data Loading
+
+Use `<svelte:boundary>` with `{@const data = await ...}` for all data fetching:
+
+```svelte
+{#snippet DataList()}
+  <svelte:boundary onerror={(e) => console.error(e)}>
+    {@const data = await fetchData(queryParams)}
+
+    {#each data as item}{item.name}{/each}
+
+    {#snippet pending()}<Skeleton />{/snippet}
+    {#snippet failed(error, reset)}<Button onclick={reset}>Retry</Button>{/snippet}
+  </svelte:boundary>
+{/snippet}
+
+{@render DataList()}
+```
+
+**Never use the old `.loading/.error/.current` pattern** - it's deprecated.
 
 ## Product Philosophy
 

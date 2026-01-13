@@ -2,6 +2,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { getTodos } from '$lib/remote/todo.remote';
 	import {
 		labels,
@@ -9,19 +10,15 @@
 		priorities
 	} from '@routes/(protected)/[organization_slug]/todos/components/data';
 	import { ExternalLinkIcon } from '@lucide/svelte';
+	import AlertCircleIcon from '@tabler/icons-svelte/icons/alert-circle';
 	import { page } from '$app/state';
 
 	// Stable reference for filters to prevent infinite re-renders
 	const emptyFilters: [] = [];
 
-	// Use $derived to get the organization slug reactively but with stable filter reference
+	// Use $derived to get the organization slug reactively
 	const organizationSlug = $derived(page.params.organization_slug!);
-	const todosQuery = $derived(
-		getTodos({
-			organizationSlug,
-			filters: emptyFilters
-		})
-	);
+	const queryParams = $derived({ organizationSlug, filters: emptyFilters });
 
 	function getStatusInfo(status: string) {
 		return statuses.find((s) => s.value === status) || statuses[0];
@@ -66,52 +63,28 @@
 	}
 </script>
 
-<Card.Root class="gap-4 py-4 shadow-xs">
-	<Card.Header class="px-5">
-		<div class="space-y-1">
-			<Card.Title class="text-base font-semibold">Recent tasks</Card.Title>
-			<Card.Description class="text-sm">Latest tasks and their current status</Card.Description>
-		</div>
-		<Card.Action>
-			<Button variant="outline" size="sm" href={'/' + page.params.organization_slug + '/todos'}>
-				View all
-				<ExternalLinkIcon class="ml-2 h-4 w-4" />
-			</Button>
-		</Card.Action>
-	</Card.Header>
+{#snippet TodoTableSkeleton()}
+	<div class="space-y-2.5">
+		{#each Array(5) as _, i (i)}
+			<div class="flex items-center gap-3 rounded-md border px-3 py-2.5">
+				<Skeleton class="h-4 w-4" />
+				<div class="flex-1 space-y-2">
+					<Skeleton class="h-4 w-3/4" />
+					<Skeleton class="h-3 w-1/2" />
+				</div>
+				<Skeleton class="h-6 w-16 rounded-md" />
+			</div>
+		{/each}
+	</div>
+{/snippet}
 
-	<Card.Content class="px-5">
-		{#if todosQuery.loading}
+{#snippet RecentTasks()}
+	<svelte:boundary onerror={(e) => console.error('Todos fetch failed:', e)}>
+		{@const todos = await getTodos(queryParams)}
+
+		{#if todos.length > 0}
 			<div class="space-y-2.5">
-				{#each Array.from({ length: 5 }, (_, i) => i) as i (i)}
-					<div class="flex items-center gap-3 rounded-md border px-3 py-2.5">
-						<div class="h-4 w-4 animate-pulse rounded bg-muted"></div>
-						<div class="flex-1 space-y-2">
-							<div class="h-4 w-3/4 animate-pulse rounded bg-muted"></div>
-							<div class="h-3 w-1/2 animate-pulse rounded bg-muted"></div>
-						</div>
-						<div class="h-6 w-16 animate-pulse rounded bg-muted"></div>
-					</div>
-				{/each}
-			</div>
-		{:else if todosQuery.error}
-			<div class="py-6 text-center">
-				<div
-					class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10"
-				>
-					<ExternalLinkIcon class="h-6 w-6 text-destructive" />
-				</div>
-				<h3 class="mt-2 text-sm font-semibold text-destructive">Failed to load tasks</h3>
-				<p class="mt-1 text-sm text-muted-foreground">There was an error loading your tasks.</p>
-				<div class="mt-4">
-					<Button variant="outline" size="sm" onclick={() => window.location.reload()}>
-						Try again
-					</Button>
-				</div>
-			</div>
-		{:else if todosQuery.current && todosQuery.current.length > 0}
-			<div class="space-y-2.5">
-				{#each todosQuery.current.slice(0, 8) as todo (todo.id)}
+				{#each todos.slice(0, 8) as todo (todo.id)}
 					{@const statusInfo = getStatusInfo(todo.status)}
 					{@const priorityInfo = getPriorityInfo(todo.priority)}
 					{@const labelInfo = getLabelInfo(todo.label)}
@@ -136,10 +109,10 @@
 				{/each}
 			</div>
 
-			{#if todosQuery.current.length > 8}
+			{#if todos.length > 8}
 				<div class="mt-4 text-center">
 					<Button variant="ghost" size="sm" href={'/' + page.params.organization_slug + '/todos'}>
-						View {todosQuery.current.length - 8} more
+						View {todos.length - 8} more
 					</Button>
 				</div>
 			{/if}
@@ -155,5 +128,45 @@
 				</div>
 			</div>
 		{/if}
+
+		{#snippet pending()}
+			{@render TodoTableSkeleton()}
+		{/snippet}
+
+		{#snippet failed(error, reset)}
+			<div class="py-6 text-center">
+				<div
+					class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10"
+				>
+					<AlertCircleIcon class="h-6 w-6 text-destructive" />
+				</div>
+				<h3 class="mt-2 text-sm font-semibold text-destructive">Failed to load tasks</h3>
+				<p class="mt-1 text-sm text-muted-foreground">There was an error loading your tasks.</p>
+				<div class="mt-4">
+					<Button variant="outline" size="sm" onclick={reset}>
+						Try again
+					</Button>
+				</div>
+			</div>
+		{/snippet}
+	</svelte:boundary>
+{/snippet}
+
+<Card.Root class="gap-4 py-4 shadow-xs">
+	<Card.Header class="px-5">
+		<div class="space-y-1">
+			<Card.Title class="text-base font-semibold">Recent tasks</Card.Title>
+			<Card.Description class="text-sm">Latest tasks and their current status</Card.Description>
+		</div>
+		<Card.Action>
+			<Button variant="outline" size="sm" href={'/' + page.params.organization_slug + '/todos'}>
+				View all
+				<ExternalLinkIcon class="ml-2 h-4 w-4" />
+			</Button>
+		</Card.Action>
+	</Card.Header>
+
+	<Card.Content class="px-5">
+		{@render RecentTasks()}
 	</Card.Content>
 </Card.Root>
