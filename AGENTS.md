@@ -1,5 +1,12 @@
 # Project Guidelines
 
+> **Skills Available**: Always invoke the appropriate skill for specialized tasks:
+>
+> - `SvelteKit Frontend Patterns` - Pages, components, data loading with boundary pattern
+> - `SvelteKit Remote Functions` - Backend query/form/command implementations
+> - `Kysely Query Architect` - Database queries in `@packages/db/src/queries/*`
+> - `frontend-design` - New screens, pages, or components requiring design
+
 ## Runtime & Package Manager
 
 Use **Bun** exclusively. Never use Node.js, npm, yarn, pnpm, vite, or dotenv.
